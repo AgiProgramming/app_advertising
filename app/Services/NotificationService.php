@@ -11,9 +11,7 @@ use App\Models\User;
  */
 class NotificationService
 {
-    public function __construct(protected FcmService $fcm)
-    {
-    }
+    public function __construct(protected FcmService $fcm) {}
 
     public function notify(
         User $user,

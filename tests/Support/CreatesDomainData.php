@@ -37,7 +37,7 @@ trait CreatesDomainData
         if ($employee !== [] && ! $user->employee) {
             Employee::create(array_merge([
                 'user_id' => $user->id,
-                'nik' => strtoupper($username) . '-NIK',
+                'nik' => strtoupper($username).'-NIK',
                 'name' => ucfirst($username),
                 'position' => 'Staf',
                 'is_active' => true,
@@ -49,7 +49,7 @@ trait CreatesDomainData
 
     protected function karyawan(string $username, array $employee = []): User
     {
-        return $this->user($username, 'Karyawan', array_merge(['nik' => strtoupper($username) . '-NIK'], $employee));
+        return $this->user($username, 'Karyawan', array_merge(['nik' => strtoupper($username).'-NIK'], $employee));
     }
 
     protected function admin(): User
@@ -66,7 +66,7 @@ trait CreatesDomainData
     {
         return Shop::create([
             'code' => $code,
-            'name' => 'Toko Uji ' . $code,
+            'name' => 'Toko Uji '.$code,
             'owner_name' => 'Pemilik',
             'status' => 'Aktif',
         ]);
@@ -75,9 +75,9 @@ trait CreatesDomainData
     protected function spk(array $attributes = []): Spk
     {
         return Spk::create(array_merge([
-            'spk_number' => 'SPK-TEST-' . uniqid(),
+            'spk_number' => 'SPK-TEST-'.uniqid(),
             'date' => now()->toDateString(),
-            'shop_id' => $this->shop('SHOP-' . uniqid())->id,
+            'shop_id' => $this->shop('SHOP-'.uniqid())->id,
             'job_name' => 'Neon Box',
             'spk_value' => 1000000,
             'job_status' => 'Belum Dikerjakan',
@@ -98,7 +98,7 @@ trait CreatesDomainData
     protected function payroll(Employee $employee, Spk $spk, array $attributes = []): Payroll
     {
         return Payroll::create(array_merge([
-            'slip_number' => 'SLIP-TEST-' . uniqid(),
+            'slip_number' => 'SLIP-TEST-'.uniqid(),
             'employee_id' => $employee->id,
             'spk_id' => $spk->id,
             'period' => '2026-10',
@@ -126,7 +126,7 @@ trait CreatesDomainData
     {
         $this->app['auth']->forgetGuards();
 
-        return $this->withHeader('Authorization', 'Bearer ' . $token);
+        return $this->withHeader('Authorization', 'Bearer '.$token);
     }
 
     /**

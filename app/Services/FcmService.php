@@ -91,7 +91,7 @@ class FcmService
         $now = time();
         $encode = fn (array $data) => rtrim(strtr(base64_encode(json_encode($data)), '+/', '-_'), '=');
 
-        $signingInput = $encode(['alg' => 'RS256', 'typ' => 'JWT']) . '.' . $encode([
+        $signingInput = $encode(['alg' => 'RS256', 'typ' => 'JWT']).'.'.$encode([
             'iss' => $creds['client_email'],
             'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
             'aud' => 'https://oauth2.googleapis.com/token',
@@ -105,7 +105,7 @@ class FcmService
             return null;
         }
 
-        $jwt = $signingInput . '.' . rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+        $jwt = $signingInput.'.'.rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
 
         try {
             $response = Http::withOptions($this->httpOptions())->asForm()->timeout(15)->post('https://oauth2.googleapis.com/token', [
@@ -113,7 +113,7 @@ class FcmService
                 'assertion' => $jwt,
             ]);
         } catch (\Throwable $e) {
-            Log::warning('FCM: gagal meminta access token - ' . $e->getMessage());
+            Log::warning('FCM: gagal meminta access token - '.$e->getMessage());
 
             return null;
         }
@@ -172,18 +172,21 @@ class FcmService
                         ],
                     ]);
             } catch (\Throwable $e) {
-                Log::warning('FCM: pengiriman gagal - ' . $e->getMessage());
+                Log::warning('FCM: pengiriman gagal - '.$e->getMessage());
+
                 continue;
             }
 
             if ($response->successful()) {
                 $sent++;
+
                 continue;
             }
 
             // Token sudah tidak valid (app di-uninstall / token dirotasi) -> hapus.
             if ($response->status() === 404 || $response->json('error.status') === 'NOT_FOUND') {
                 DeviceToken::where('token', $token)->delete();
+
                 continue;
             }
 

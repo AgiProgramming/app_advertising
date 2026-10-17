@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
@@ -47,7 +48,7 @@ class PayrollResource extends JsonResource
             'payment_status' => $this->payment_status,
             'payment_date' => $this->payment_date,
             'verification_token' => $this->verification_token,
-            'verify_url' => $this->verification_token ? url('/api/verify/' . $this->verification_token) : null,
+            'verify_url' => $this->verification_token ? url('/api/verify/'.$this->verification_token) : null,
             'created_at' => $this->created_at,
         ];
     }

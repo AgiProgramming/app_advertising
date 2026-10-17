@@ -1,9 +1,10 @@
 <?php
+
 namespace App\Services;
 
-use App\Models\Spk;
-use App\Models\Payroll;
 use App\Models\CashAdvance;
+use App\Models\Payroll;
+use App\Models\Spk;
 
 class ReportService
 {
@@ -11,22 +12,22 @@ class ReportService
     {
         $query = Spk::with(['shop', 'employee']);
 
-        if (!empty($filters['start_date'])) {
+        if (! empty($filters['start_date'])) {
             $query->whereDate('date', '>=', $filters['start_date']);
         }
-        if (!empty($filters['end_date'])) {
+        if (! empty($filters['end_date'])) {
             $query->whereDate('date', '<=', $filters['end_date']);
         }
-        if (!empty($filters['shop_id'])) {
+        if (! empty($filters['shop_id'])) {
             $query->where('shop_id', $filters['shop_id']);
         }
-        if (!empty($filters['employee_id'])) {
+        if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);
         }
-        if (!empty($filters['job_status'])) {
+        if (! empty($filters['job_status'])) {
             $query->where('job_status', $filters['job_status']);
         }
-        if (!empty($filters['payment_status'])) {
+        if (! empty($filters['payment_status'])) {
             $query->where('payment_status', $filters['payment_status']);
         }
 
@@ -52,13 +53,13 @@ class ReportService
     {
         $query = Payroll::with(['employee', 'spk.shop']);
 
-        if (!empty($filters['period'])) {
+        if (! empty($filters['period'])) {
             $query->where('period', $filters['period']);
         }
-        if (!empty($filters['employee_id'])) {
+        if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);
         }
-        if (!empty($filters['payment_status'])) {
+        if (! empty($filters['payment_status'])) {
             $query->where('payment_status', $filters['payment_status']);
         }
 
@@ -82,13 +83,13 @@ class ReportService
     {
         $query = CashAdvance::with('employee');
 
-        if (!empty($filters['start_date'])) {
+        if (! empty($filters['start_date'])) {
             $query->whereDate('date', '>=', $filters['start_date']);
         }
-        if (!empty($filters['end_date'])) {
+        if (! empty($filters['end_date'])) {
             $query->whereDate('date', '<=', $filters['end_date']);
         }
-        if (!empty($filters['employee_id'])) {
+        if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);
         }
 

@@ -1,10 +1,14 @@
 <?php
+
 namespace App\Http\Resources;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class SpkResource extends JsonResource {
-    public function toArray(Request $request): array {
+class SpkResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
         return [
             'id' => $this->id,
             'spk_number' => $this->spk_number,

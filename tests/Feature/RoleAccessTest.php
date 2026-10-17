@@ -11,12 +11,12 @@ use Tests\TestCase;
  */
 class RoleAccessTest extends TestCase
 {
-    use RefreshDatabase;
     use CreatesDomainData;
+    use RefreshDatabase;
 
     private function auth(string $token): static
     {
-        return $this->withHeader('Authorization', 'Bearer ' . $token);
+        return $this->withHeader('Authorization', 'Bearer '.$token);
     }
 
     public function test_karyawan_tidak_boleh_mengakses_master_data_admin(): void
@@ -83,7 +83,7 @@ class RoleAccessTest extends TestCase
         $payrollSiti = $this->payroll($siti->employee, $this->spk(['employee_id' => $siti->employee->id]));
 
         $this->auth($this->tokenFor($budi))
-            ->getJson('/api/karyawan/payrolls/' . $payrollSiti->id)
+            ->getJson('/api/karyawan/payrolls/'.$payrollSiti->id)
             ->assertStatus(403);
     }
 
@@ -96,7 +96,7 @@ class RoleAccessTest extends TestCase
         $this->payroll($siti->employee, $this->spk(['employee_id' => $siti->employee->id]));
 
         $response = $this->auth($this->tokenFor($budi))
-            ->getJson('/api/karyawan/payrolls?employee_id=' . $siti->employee->id)
+            ->getJson('/api/karyawan/payrolls?employee_id='.$siti->employee->id)
             ->assertOk();
 
         $ids = collect($response->json('data'))->pluck('id')->all();

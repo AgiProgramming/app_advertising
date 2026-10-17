@@ -10,11 +10,12 @@
  * relasi antar tabel tetap utuh dan password pengguna tidak berubah.
  */
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__.'/../../vendor/autoload.php';
 
-$app = require __DIR__ . '/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app = require __DIR__.'/../../bootstrap/app.php';
+$app->make(Kernel::class)->bootstrap();
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 
 $sqlitePath = database_path('database.sqlite');
@@ -24,7 +25,7 @@ if (! file_exists($sqlitePath)) {
     exit(1);
 }
 
-$sqlite = new PDO('sqlite:' . $sqlitePath);
+$sqlite = new PDO('sqlite:'.$sqlitePath);
 $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Urutan penting: tabel induk lebih dulu agar foreign key tidak dilanggar.
@@ -47,7 +48,8 @@ foreach ($tables as $table) {
     DB::table($table)->truncate();
 
     if ($rows === []) {
-        echo str_pad($table, 24) . "0 baris\n";
+        echo str_pad($table, 24)."0 baris\n";
+
         continue;
     }
 
@@ -55,12 +57,12 @@ foreach ($tables as $table) {
         DB::table($table)->insert($chunk);
     }
 
-    echo str_pad($table, 24) . count($rows) . " baris\n";
+    echo str_pad($table, 24).count($rows)." baris\n";
 }
 
 DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
 echo "\nSelesai. Cek jumlah baris:\n";
 foreach ($tables as $table) {
-    echo str_pad($table, 24) . DB::table($table)->count() . "\n";
+    echo str_pad($table, 24).DB::table($table)->count()."\n";
 }

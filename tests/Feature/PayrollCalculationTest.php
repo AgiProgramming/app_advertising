@@ -17,8 +17,8 @@ use Tests\TestCase;
  */
 class PayrollCalculationTest extends TestCase
 {
-    use RefreshDatabase;
     use CreatesDomainData;
+    use RefreshDatabase;
 
     private function adminToken(): string
     {
@@ -27,7 +27,7 @@ class PayrollCalculationTest extends TestCase
 
     private function auth(string $token): static
     {
-        return $this->withHeader('Authorization', 'Bearer ' . $token);
+        return $this->withHeader('Authorization', 'Bearer '.$token);
     }
 
     public function test_perhitungan_default_ppn_3_persen_dan_komisi_22_persen(): void
@@ -221,7 +221,7 @@ class PayrollCalculationTest extends TestCase
         $this->assertSame('Selesai', $spk->fresh()->job_status);
 
         $this->auth($this->adminToken())
-            ->deleteJson('/api/payrolls/' . $slip['id'])
+            ->deleteJson('/api/payrolls/'.$slip['id'])
             ->assertOk();
 
         $this->assertSame('Sedang Dikerjakan', $spk->fresh()->job_status);
@@ -239,7 +239,7 @@ class PayrollCalculationTest extends TestCase
             ->json('data');
 
         $updated = $this->auth($this->adminToken())
-            ->patchJson('/api/payrolls/' . $slip['id'] . '/payment', [
+            ->patchJson('/api/payrolls/'.$slip['id'].'/payment', [
                 'payment_status' => 'Sudah Dibayar',
                 'payment_date' => '2026-10-17',
             ])
@@ -258,7 +258,7 @@ class PayrollCalculationTest extends TestCase
         $slip = $this->payroll($karyawan->employee, $spk);
 
         $this->auth($this->tokenFor($karyawan))
-            ->getJson('/api/karyawan/payrolls/' . $slip->id)
+            ->getJson('/api/karyawan/payrolls/'.$slip->id)
             ->assertOk()
             ->assertJsonPath('data.id', $slip->id);
     }

@@ -11,8 +11,8 @@ use Tests\TestCase;
  */
 class AuthLoginTest extends TestCase
 {
-    use RefreshDatabase;
     use CreatesDomainData;
+    use RefreshDatabase;
 
     public function test_login_berhasil_dengan_kredensial_benar(): void
     {
@@ -114,14 +114,14 @@ class AuthLoginTest extends TestCase
         $user = $this->admin();
         $token = $this->tokenFor($user);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/logout')
             ->assertOk();
 
         // Guard di-cache per proses test; reset agar request berikutnya benar-benar memeriksa token.
         $this->app['auth']->forgetGuards();
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/profile')
             ->assertStatus(401);
     }

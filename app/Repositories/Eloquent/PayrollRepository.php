@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Repositories\Eloquent;
 
 use App\Models\Payroll;
 use App\Repositories\Contracts\PayrollRepositoryInterface;
+use Illuminate\Support\Str;
 
 class PayrollRepository implements PayrollRepositoryInterface
 {
@@ -42,7 +44,7 @@ class PayrollRepository implements PayrollRepositoryInterface
         }
 
         if (empty($data['verification_token'])) {
-            $data['verification_token'] = (string) \Illuminate\Support\Str::uuid();
+            $data['verification_token'] = (string) Str::uuid();
         }
 
         return Payroll::create($data);
@@ -52,6 +54,7 @@ class PayrollRepository implements PayrollRepositoryInterface
     {
         $payroll = $this->getById($id);
         $payroll->update($data);
+
         return $payroll;
     }
 
@@ -59,6 +62,7 @@ class PayrollRepository implements PayrollRepositoryInterface
     {
         $payroll = $this->getById($id);
         $payroll->delete();
+
         return true;
     }
 
@@ -69,7 +73,7 @@ class PayrollRepository implements PayrollRepositoryInterface
             ->orderBy('slip_number', 'desc')
             ->first();
 
-        if (!$lastPayroll) {
+        if (! $lastPayroll) {
             return "SLIP-{$datePrefix}-001";
         }
 
@@ -90,6 +94,7 @@ class PayrollRepository implements PayrollRepositoryInterface
         if ($period) {
             $query->where('period', $period);
         }
+
         return (float) $query->sum('net_salary');
     }
 }

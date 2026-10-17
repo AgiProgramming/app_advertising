@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -27,36 +28,42 @@ class CashAdvanceController extends Controller
         }
 
         $cashAdvances = $this->cashAdvanceService->getAllCashAdvances($employeeId);
+
         return CashAdvanceResource::collection($cashAdvances);
     }
 
     public function store(CashAdvanceRequest $request)
     {
         $cashAdvance = $this->cashAdvanceService->createCashAdvance($request->validated());
+
         return new CashAdvanceResource($cashAdvance);
     }
 
     public function show(string $id)
     {
         $cashAdvance = $this->cashAdvanceService->getCashAdvanceById($id);
+
         return new CashAdvanceResource($cashAdvance);
     }
 
     public function update(CashAdvanceRequest $request, string $id)
     {
         $cashAdvance = $this->cashAdvanceService->updateCashAdvance($id, $request->validated());
+
         return new CashAdvanceResource($cashAdvance);
     }
 
     public function destroy(string $id)
     {
         $this->cashAdvanceService->deleteCashAdvance($id);
+
         return response()->json(['message' => 'Data kasbon berhasil dihapus.']);
     }
 
     public function summaryByEmployee(string $employeeId)
     {
         $total = $this->cashAdvanceService->getTotalCashAdvanceByEmployee($employeeId);
+
         return response()->json([
             'employee_id' => $employeeId,
             'total_cash_advance' => $total,

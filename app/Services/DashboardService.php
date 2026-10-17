@@ -1,12 +1,12 @@
 <?php
+
 namespace App\Services;
 
-use App\Models\Shop;
-use App\Models\Employee;
-use App\Models\Spk;
 use App\Models\CashAdvance;
+use App\Models\Employee;
 use App\Models\Payroll;
-use Illuminate\Support\Facades\DB;
+use App\Models\Shop;
+use App\Models\Spk;
 
 class DashboardService
 {
@@ -70,10 +70,14 @@ class DashboardService
 
         // Rekap performa order per toko
         $topShops = Shop::withCount(['spks' => function ($q) use ($period) {
-                if ($period) $q->where('date', 'LIKE', "{$period}%");
-            }])
+            if ($period) {
+                $q->where('date', 'LIKE', "{$period}%");
+            }
+        }])
             ->withSum(['spks' => function ($q) use ($period) {
-                if ($period) $q->where('date', 'LIKE', "{$period}%");
+                if ($period) {
+                    $q->where('date', 'LIKE', "{$period}%");
+                }
             }], 'spk_value')
             ->orderBy('spks_sum_spk_value', 'desc')
             ->limit(5)

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -17,6 +18,7 @@ class DashboardController extends Controller
     public function adminDashboard()
     {
         $data = $this->dashboardService->getAdminDashboard();
+
         return response()->json([
             'status' => 'success',
             'data' => $data,
@@ -27,6 +29,7 @@ class DashboardController extends Controller
     {
         $period = $request->query('period');
         $data = $this->dashboardService->getOwnerDashboard($period);
+
         return response()->json([
             'status' => 'success',
             'data' => $data,
@@ -36,7 +39,7 @@ class DashboardController extends Controller
     public function karyawanDashboard(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->employee) {
+        if (! $user || ! $user->employee) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Profil karyawan tidak ditemukan untuk akun ini.',
@@ -44,6 +47,7 @@ class DashboardController extends Controller
         }
 
         $data = $this->dashboardService->getKaryawanDashboard($user->employee->id);
+
         return response()->json([
             'status' => 'success',
             'data' => $data,

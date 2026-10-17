@@ -1,14 +1,15 @@
 <?php
-use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ShopController;
-use App\Http\Controllers\Api\EmployeeController;
-use App\Http\Controllers\Api\SpkController;
 use App\Http\Controllers\Api\CashAdvanceController;
-use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ShopController;
+use App\Http\Controllers\Api\SpkController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 

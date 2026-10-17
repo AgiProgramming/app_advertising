@@ -1,29 +1,38 @@
 <?php
+
 namespace App\Models;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable {
-    use HasApiTokens, Notifiable, HasUuids, SoftDeletes;
+class User extends Authenticatable
+{
+    use HasApiTokens, HasUuids, Notifiable, SoftDeletes;
 
     protected $fillable = ['role_id', 'username', 'password'];
+
     protected $hidden = ['password', 'remember_token'];
 
-    public function role() {
+    public function role()
+    {
         return $this->belongsTo(Role::class);
     }
-    public function employee() {
+
+    public function employee()
+    {
         return $this->hasOne(Employee::class);
     }
 
-    public function deviceTokens() {
+    public function deviceTokens()
+    {
         return $this->hasMany(DeviceToken::class);
     }
 
-    public function appNotifications() {
+    public function appNotifications()
+    {
         return $this->hasMany(AppNotification::class);
     }
 }

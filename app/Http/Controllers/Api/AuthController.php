@@ -1,13 +1,16 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 
-class AuthController extends Controller {
-    public function login(Request $request) {
+class AuthController extends Controller
+{
+    public function login(Request $request)
+    {
         $credentials = $request->validate([
             'username' => 'required|string|max:50',
             'password' => 'required|string|max:72',
@@ -21,22 +24,22 @@ class AuthController extends Controller {
             ->first();
 
         // Satu pesan generik untuk user tidak ada maupun password salah (anti-enumerasi).
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json([
-                'message' => 'Username atau password salah.'
+                'message' => 'Username atau password salah.',
             ], 401);
         }
 
-        if (!$user->role) {
+        if (! $user->role) {
             return response()->json([
-                'message' => 'Akun belum memiliki role. Hubungi admin.'
+                'message' => 'Akun belum memiliki role. Hubungi admin.',
             ], 403);
         }
 
         // Akun karyawan yang dinonaktifkan tidak boleh masuk.
-        if ($user->role->name === 'Karyawan' && $user->employee && !$user->employee->is_active) {
+        if ($user->role->name === 'Karyawan' && $user->employee && ! $user->employee->is_active) {
             return response()->json([
-                'message' => 'Akun Anda sudah dinonaktifkan. Hubungi admin.'
+                'message' => 'Akun Anda sudah dinonaktifkan. Hubungi admin.',
             ], 403);
         }
 
@@ -57,20 +60,24 @@ class AuthController extends Controller {
                     'id' => $user->role->id,
                     'name' => $user->role->name,
                 ],
-                'employee' => $user->employee
-            ]
+                'employee' => $user->employee,
+            ],
         ]);
     }
 
-    public function logout(Request $request) {
+    public function logout(Request $request)
+    {
         $request->user()->currentAccessToken()->delete();
+
         return response()->json([
-            'message' => 'Logout berhasil.'
+            'message' => 'Logout berhasil.',
         ]);
     }
 
-    public function profile(Request $request) {
+    public function profile(Request $request)
+    {
         $user = $request->user()->load('role', 'employee');
+
         return response()->json([
             'user' => [
                 'id' => $user->id,
@@ -79,8 +86,8 @@ class AuthController extends Controller {
                     'id' => $user->role->id,
                     'name' => $user->role->name,
                 ],
-                'employee' => $user->employee
-            ]
+                'employee' => $user->employee,
+            ],
         ]);
     }
 }

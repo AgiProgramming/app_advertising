@@ -2,6 +2,16 @@
 
 namespace App\Providers;
 
+use App\Repositories\Contracts\CashAdvanceRepositoryInterface;
+use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\PayrollRepositoryInterface;
+use App\Repositories\Contracts\ShopRepositoryInterface;
+use App\Repositories\Contracts\SpkRepositoryInterface;
+use App\Repositories\Eloquent\CashAdvanceRepository;
+use App\Repositories\Eloquent\EmployeeRepository;
+use App\Repositories\Eloquent\PayrollRepository;
+use App\Repositories\Eloquent\ShopRepository;
+use App\Repositories\Eloquent\SpkRepository;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -15,11 +25,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(\App\Repositories\Contracts\SpkRepositoryInterface::class, \App\Repositories\Eloquent\SpkRepository::class);
-        $this->app->bind(\App\Repositories\Contracts\EmployeeRepositoryInterface::class, \App\Repositories\Eloquent\EmployeeRepository::class);
-        $this->app->bind(\App\Repositories\Contracts\ShopRepositoryInterface::class, \App\Repositories\Eloquent\ShopRepository::class);
-        $this->app->bind(\App\Repositories\Contracts\CashAdvanceRepositoryInterface::class, \App\Repositories\Eloquent\CashAdvanceRepository::class);
-        $this->app->bind(\App\Repositories\Contracts\PayrollRepositoryInterface::class, \App\Repositories\Eloquent\PayrollRepository::class);
+        $this->app->bind(SpkRepositoryInterface::class, SpkRepository::class);
+        $this->app->bind(EmployeeRepositoryInterface::class, EmployeeRepository::class);
+        $this->app->bind(ShopRepositoryInterface::class, ShopRepository::class);
+        $this->app->bind(CashAdvanceRepositoryInterface::class, CashAdvanceRepository::class);
+        $this->app->bind(PayrollRepositoryInterface::class, PayrollRepository::class);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AppNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -13,8 +14,8 @@ use Tests\TestCase;
  */
 class NotificationTest extends TestCase
 {
-    use RefreshDatabase;
     use CreatesDomainData;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -101,7 +102,7 @@ class NotificationTest extends TestCase
             ->json('data');
 
         $this->asToken($adminToken)
-            ->patchJson('/api/payrolls/' . $slip['id'] . '/payment', [
+            ->patchJson('/api/payrolls/'.$slip['id'].'/payment', [
                 'payment_status' => 'Sudah Dibayar',
                 'payment_date' => '2026-10-17',
             ])
@@ -118,7 +119,7 @@ class NotificationTest extends TestCase
         $budi = $this->karyawan('budi', ['nik' => 'EMP-BUDI']);
         $siti = $this->karyawan('siti', ['nik' => 'EMP-SITI']);
 
-        $notif = \App\Models\AppNotification::create([
+        $notif = AppNotification::create([
             'user_id' => $budi->id,
             'title' => 'Slip gaji Oktober 2026 sudah terbit',
             'body' => 'Rp 212.367,02',
@@ -126,11 +127,11 @@ class NotificationTest extends TestCase
         ]);
 
         $this->asToken($this->tokenFor($siti))
-            ->patchJson('/api/notifications/' . $notif->id . '/read')
+            ->patchJson('/api/notifications/'.$notif->id.'/read')
             ->assertStatus(404);
 
         $this->asToken($this->tokenFor($budi))
-            ->patchJson('/api/notifications/' . $notif->id . '/read')
+            ->patchJson('/api/notifications/'.$notif->id.'/read')
             ->assertOk()
             ->assertJsonPath('unread_count', 0);
     }
@@ -140,7 +141,7 @@ class NotificationTest extends TestCase
         $budi = $this->karyawan('budi');
 
         foreach (['Satu', 'Dua'] as $title) {
-            \App\Models\AppNotification::create([
+            AppNotification::create([
                 'user_id' => $budi->id,
                 'title' => $title,
                 'body' => 'isi',

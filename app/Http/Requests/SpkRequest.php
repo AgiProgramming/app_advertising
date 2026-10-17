@@ -1,12 +1,18 @@
 <?php
+
 namespace App\Http\Requests;
+
 use Illuminate\Foundation\Http\FormRequest;
 
-class SpkRequest extends FormRequest {
-    public function authorize(): bool {
+class SpkRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
         return true;
     }
-    public function rules(): array {
+
+    public function rules(): array
+    {
         return [
             'date' => 'required|date',
             'shop_id' => 'required|exists:shops,id',

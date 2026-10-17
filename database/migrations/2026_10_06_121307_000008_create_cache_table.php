@@ -1,9 +1,13 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-return new class extends Migration {
-    public function up(): void {
+
+return new class extends Migration
+{
+    public function up(): void
+    {
         Schema::create('cache', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->mediumText('value');
@@ -15,7 +19,9 @@ return new class extends Migration {
             $table->integer('expiration');
         });
     }
-    public function down(): void {
+
+    public function down(): void
+    {
         Schema::dropIfExists('cache');
         Schema::dropIfExists('cache_locks');
     }

@@ -1,9 +1,10 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\PayrollRequest;
 use App\Http\Requests\PayrollPaymentRequest;
+use App\Http\Requests\PayrollRequest;
 use App\Http\Resources\PayrollResource;
 use App\Models\Payroll;
 use App\Services\PayrollService;
@@ -36,6 +37,7 @@ class PayrollController extends Controller
         $paymentStatus = $request->query('payment_status');
 
         $payrolls = $this->payrollService->getAllPayrolls($employeeId, $period, $paymentStatus);
+
         return PayrollResource::collection($payrolls);
     }
 
@@ -50,6 +52,7 @@ class PayrollController extends Controller
 
         try {
             $preview = $this->payrollService->calculatePreview($request->all());
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -72,12 +75,12 @@ class PayrollController extends Controller
                     'remaining_cash_advance' => $preview['remaining_cash_advance'],
                     'cash_advance_deduction' => $preview['cash_advance_deduction'],
                     'net_salary' => $preview['net_salary'],
-                ]
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
@@ -86,10 +89,11 @@ class PayrollController extends Controller
     {
         try {
             $payroll = $this->payrollService->createPayroll($request->validated());
+
             return new PayrollResource($payroll);
         } catch (Exception $e) {
             return response()->json([
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
@@ -101,7 +105,7 @@ class PayrollController extends Controller
 
         // Validasi akses jika Karyawan mencoba membuka slip karyawan lain
         if ($user && $user->role && $user->role->name === 'Karyawan') {
-            if (!$user->employee || $user->employee->id !== $payroll->employee_id) {
+            if (! $user->employee || $user->employee->id !== $payroll->employee_id) {
                 return response()->json(['message' => 'Forbidden. Anda tidak dapat melihat slip gaji karyawan lain.'], 403);
             }
         }
@@ -113,10 +117,11 @@ class PayrollController extends Controller
     {
         try {
             $payroll = $this->payrollService->updatePayroll($id, $request->validated());
+
             return new PayrollResource($payroll);
         } catch (Exception $e) {
             return response()->json([
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
@@ -124,6 +129,7 @@ class PayrollController extends Controller
     public function destroy(string $id)
     {
         $this->payrollService->deletePayroll($id);
+
         return response()->json(['message' => 'Slip gaji berhasil dihapus.']);
     }
 
@@ -155,10 +161,10 @@ class PayrollController extends Controller
             }
         }
 
-        $verifyUrl = url('/api/verify/' . $payroll->verification_token);
+        $verifyUrl = url('/api/verify/'.$payroll->verification_token);
 
         // QR dibuat sebagai PNG (dompdf tidak bisa merender SVG).
-        $qrImage = (new PngWriter())->write(
+        $qrImage = (new PngWriter)->write(
             (new QrCodeImage($verifyUrl))->setSize(220)->setMargin(0)
         );
         $qrBase64 = base64_encode($qrImage->getString());
@@ -169,7 +175,7 @@ class PayrollController extends Controller
             'qrBase64' => $qrBase64,
         ])->setPaper('a5');
 
-        return $pdf->download('slip-' . $payroll->slip_number . '.pdf');
+        return $pdf->download('slip-'.$payroll->slip_number.'.pdf');
     }
 
     /**
@@ -195,7 +201,7 @@ class PayrollController extends Controller
                 'period' => $payroll->period,
                 'employee_name' => $payroll->employee?->name,
                 'employee_nik' => $payroll->employee?->nik
-                    ? substr($payroll->employee->nik, 0, 4) . str_repeat('*', max(0, strlen($payroll->employee->nik) - 4))
+                    ? substr($payroll->employee->nik, 0, 4).str_repeat('*', max(0, strlen($payroll->employee->nik) - 4))
                     : null,
                 'shop_name' => $payroll->spk?->shop?->name,
                 'job_name' => $payroll->spk?->job_name,

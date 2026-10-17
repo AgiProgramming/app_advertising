@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Repositories\Eloquent;
 
 use App\Models\CashAdvance;
@@ -12,6 +13,7 @@ class CashAdvanceRepository implements CashAdvanceRepositoryInterface
         if ($employeeId) {
             $query->where('employee_id', $employeeId);
         }
+
         return $query->get();
     }
 
@@ -29,6 +31,7 @@ class CashAdvanceRepository implements CashAdvanceRepositoryInterface
     {
         $cashAdvance = $this->getById($id);
         $cashAdvance->update($data);
+
         return $cashAdvance;
     }
 
@@ -36,6 +39,7 @@ class CashAdvanceRepository implements CashAdvanceRepositoryInterface
     {
         $cashAdvance = $this->getById($id);
         $cashAdvance->delete();
+
         return true;
     }
 

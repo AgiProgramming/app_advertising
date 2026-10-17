@@ -11,14 +11,14 @@ use Tests\TestCase;
  */
 class SlipDocumentTest extends TestCase
 {
-    use RefreshDatabase;
     use CreatesDomainData;
+    use RefreshDatabase;
 
     private function buatSlip(string $adminToken, array $spkAttributes = []): array
     {
         // Slip butuh SPK yang sudah punya karyawan.
         if (! isset($spkAttributes['employee_id'])) {
-            $karyawan = $this->karyawan('pekerja-' . uniqid(), ['nik' => 'EMP-' . strtoupper(substr(uniqid(), -6))]);
+            $karyawan = $this->karyawan('pekerja-'.uniqid(), ['nik' => 'EMP-'.strtoupper(substr(uniqid(), -6))]);
             $spkAttributes['employee_id'] = $karyawan->employee->id;
         }
 
@@ -35,7 +35,7 @@ class SlipDocumentTest extends TestCase
         $slip = $this->buatSlip($this->tokenFor($this->admin()));
 
         $this->assertNotEmpty($slip['verification_token']);
-        $this->assertStringContainsString('/api/verify/' . $slip['verification_token'], $slip['verify_url']);
+        $this->assertStringContainsString('/api/verify/'.$slip['verification_token'], $slip['verify_url']);
     }
 
     public function test_verifikasi_qr_publik_mengembalikan_ringkasan_slip(): void
@@ -43,7 +43,7 @@ class SlipDocumentTest extends TestCase
         $karyawan = $this->karyawan('budi', ['nik' => 'EMP-BUDI']);
         $slip = $this->buatSlip($this->tokenFor($this->admin()), ['employee_id' => $karyawan->employee->id]);
 
-        $this->getJson('/api/verify/' . $slip['verification_token'])
+        $this->getJson('/api/verify/'.$slip['verification_token'])
             ->assertOk()
             ->assertJsonPath('valid', true)
             ->assertJsonPath('data.slip_number', $slip['slip_number'])
@@ -55,7 +55,7 @@ class SlipDocumentTest extends TestCase
         $karyawan = $this->karyawan('budi', ['nik' => 'EMP-123456']);
         $slip = $this->buatSlip($this->tokenFor($this->admin()), ['employee_id' => $karyawan->employee->id]);
 
-        $nik = $this->getJson('/api/verify/' . $slip['verification_token'])->json('data.employee_nik');
+        $nik = $this->getJson('/api/verify/'.$slip['verification_token'])->json('data.employee_nik');
 
         $this->assertStringStartsWith('EMP-', $nik);
         $this->assertStringContainsString('*', $nik);
@@ -73,7 +73,7 @@ class SlipDocumentTest extends TestCase
         $slip = $this->buatSlip($this->tokenFor($this->admin()));
 
         $response = $this->asToken($this->tokenFor($this->admin()))
-            ->get('/api/payrolls/' . $slip['id'] . '/pdf');
+            ->get('/api/payrolls/'.$slip['id'].'/pdf');
 
         $response->assertOk();
         $this->assertSame('application/pdf', $response->headers->get('content-type'));
@@ -89,7 +89,7 @@ class SlipDocumentTest extends TestCase
         $slip = $this->buatSlip($this->tokenFor($this->admin()), ['employee_id' => $karyawan->employee->id]);
 
         $this->asToken($this->tokenFor($karyawan))
-            ->get('/api/payrolls/' . $slip['id'] . '/pdf')
+            ->get('/api/payrolls/'.$slip['id'].'/pdf')
             ->assertOk();
     }
 
@@ -101,7 +101,7 @@ class SlipDocumentTest extends TestCase
         $slipSiti = $this->buatSlip($this->tokenFor($this->admin()), ['employee_id' => $siti->employee->id]);
 
         $this->asToken($this->tokenFor($budi))
-            ->getJson('/api/payrolls/' . $slipSiti['id'] . '/pdf')
+            ->getJson('/api/payrolls/'.$slipSiti['id'].'/pdf')
             ->assertStatus(403);
     }
 
@@ -109,6 +109,6 @@ class SlipDocumentTest extends TestCase
     {
         $slip = $this->buatSlip($this->tokenFor($this->admin()));
 
-        $this->asGuest()->getJson('/api/payrolls/' . $slip['id'] . '/pdf')->assertStatus(401);
+        $this->asGuest()->getJson('/api/payrolls/'.$slip['id'].'/pdf')->assertStatus(401);
     }
 }
