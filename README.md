@@ -75,6 +75,7 @@ tests/Feature/                       # 50 pengujian otomatis
 ## Dokumentasi terkait
 
 - `LAPORAN_AUDIT_API.md` — hasil audit keamanan API (90 skenario) & perbaikannya.
+- `deploy/README.md` — panduan deploy ke shared hosting (cPanel, tanpa SSH) lewat FTP + deploy hook.
 - `CI-CD.md` — penjelasan pipeline CI/CD (disertakan di paket skripsi, satu tingkat di atas repo ini).
 
 ## Catatan keamanan
