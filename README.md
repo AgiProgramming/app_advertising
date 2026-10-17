@@ -6,8 +6,8 @@ aplikasi mobile Flutter `app_advertising_mobile`.
 
 > Skripsi: *Analisis dan Optimalisasi Fitur Penggajian Karyawan Menggunakan Pendekatan DevOps*
 
-<!-- Ganti <USERNAME> dengan akun GitHub kamu setelah repo di-push -->
-![Backend CI](https://github.com/<USERNAME>/app-advertising/actions/workflows/ci.yml/badge.svg)
+<!-- Badge pipeline (repo: AgiProgramming/app_advertising) -->
+![Backend CI](https://github.com/AgiProgramming/app_advertising/actions/workflows/ci.yml/badge.svg)
 
 ## Teknologi
 
