@@ -116,4 +116,27 @@ trait CreatesDomainData
     {
         return $user->createToken('auth_token')->plainTextToken;
     }
+
+    /**
+     * Kirim request sebagai pengguna tertentu.
+     * Guard Sanctum menyimpan user per proses, jadi harus di-reset dulu
+     * agar pergantian pengguna di dalam satu test benar-benar berlaku.
+     */
+    protected function asToken(string $token): static
+    {
+        $this->app['auth']->forgetGuards();
+
+        return $this->withHeader('Authorization', 'Bearer ' . $token);
+    }
+
+    /**
+     * Kirim request tanpa autentikasi (token tidak dikirim sama sekali).
+     */
+    protected function asGuest(): static
+    {
+        $this->app['auth']->forgetGuards();
+        $this->flushHeaders();
+
+        return $this;
+    }
 }

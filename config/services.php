@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'firebase' => [
+        // Path service account JSON (boleh relatif terhadap root project).
+        'credentials' => env('FIREBASE_CREDENTIALS', 'storage/app/firebase/service-account.json'),
+        'project_id' => env('FIREBASE_PROJECT_ID', 'mann-plus'),
+        // CA bundle lokal: PHP di Windows sering tidak punya sertifikat root,
+        // sehingga koneksi ke googleapis.com gagal (cURL error 60).
+        'ca_bundle' => env('FIREBASE_CA_BUNDLE', 'storage/app/certs/cacert.pem'),
+    ],
+
 ];

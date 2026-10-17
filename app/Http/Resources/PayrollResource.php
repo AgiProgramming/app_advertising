@@ -46,6 +46,8 @@ class PayrollResource extends JsonResource
             'net_salary' => (float) $this->net_salary,
             'payment_status' => $this->payment_status,
             'payment_date' => $this->payment_date,
+            'verification_token' => $this->verification_token,
+            'verify_url' => $this->verification_token ? url('/api/verify/' . $this->verification_token) : null,
             'created_at' => $this->created_at,
         ];
     }

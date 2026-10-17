@@ -7,13 +7,27 @@ use App\Http\Controllers\Api\SpkController;
 use App\Http\Controllers\Api\CashAdvanceController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ReportController;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
+// Verifikasi keaslian slip lewat QR (publik, hanya ringkasan slip).
+Route::get('/verify/{token}', [PayrollController::class, 'verify']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
+
+    // Slip PDF — semua role, Karyawan dibatasi slip miliknya di controller.
+    Route::get('/payrolls/{id}/pdf', [PayrollController::class, 'downloadPdf']);
+
+    // Notifikasi slip gaji (feed in-app + pendaftaran device FCM).
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::post('/device-token', [NotificationController::class, 'store']);
+    Route::delete('/device-token', [NotificationController::class, 'destroy']);
 
     // Rute Khusus Admin
     Route::middleware('role:Admin')->group(function () {

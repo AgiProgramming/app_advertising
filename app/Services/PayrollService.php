@@ -6,21 +6,25 @@ use App\Repositories\Contracts\SpkRepositoryInterface;
 use App\Repositories\Contracts\CashAdvanceRepositoryInterface;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PayrollService
 {
     protected $payrollRepository;
     protected $spkRepository;
     protected $cashAdvanceRepository;
+    protected NotificationService $notificationService;
 
     public function __construct(
         PayrollRepositoryInterface $payrollRepository,
         SpkRepositoryInterface $spkRepository,
-        CashAdvanceRepositoryInterface $cashAdvanceRepository
+        CashAdvanceRepositoryInterface $cashAdvanceRepository,
+        NotificationService $notificationService
     ) {
         $this->payrollRepository = $payrollRepository;
         $this->spkRepository = $spkRepository;
         $this->cashAdvanceRepository = $cashAdvanceRepository;
+        $this->notificationService = $notificationService;
     }
 
     public function getAllPayrolls(?string $employeeId = null, ?string $period = null, ?string $paymentStatus = null)
@@ -114,7 +118,7 @@ class PayrollService
         $calc = $this->calculatePreview($data);
         $spk = $calc['spk'];
 
-        return DB::transaction(function () use ($data, $calc, $spk) {
+        $payroll = DB::transaction(function () use ($data, $calc, $spk) {
             $payload = [
                 'employee_id' => $spk->employee_id,
                 'spk_id' => $spk->id,
@@ -140,6 +144,12 @@ class PayrollService
 
             return $payroll;
         });
+
+        // Notifikasi dikirim setelah transaksi commit, agar kegagalan push
+        // tidak membatalkan slip yang sudah tersimpan.
+        $this->notifyPayrollIssued($payroll);
+
+        return $payroll;
     }
 
     public function updatePayroll(string $id, array $data)
@@ -175,7 +185,7 @@ class PayrollService
         $payroll = $this->getPayrollById($id);
         $paymentDate = ($status === 'Sudah Dibayar') ? ($date ?? date('Y-m-d')) : null;
 
-        return DB::transaction(function () use ($payroll, $id, $status, $paymentDate) {
+        $updatedPayroll = DB::transaction(function () use ($payroll, $id, $status, $paymentDate) {
             $updatedPayroll = $this->payrollRepository->update($id, [
                 'payment_status' => $status,
                 'payment_date' => $paymentDate,
@@ -190,6 +200,73 @@ class PayrollService
 
             return $updatedPayroll;
         });
+
+        if ($status === 'Sudah Dibayar') {
+            $this->notifyPayrollPaid($updatedPayroll);
+        }
+
+        return $updatedPayroll;
+    }
+
+    /**
+     * Notifikasi "slip terbit" ke karyawan (feed in-app + push FCM).
+     */
+    protected function notifyPayrollIssued($payroll): void
+    {
+        try {
+            $user = $payroll->employee?->user;
+
+            if (! $user) {
+                return;
+            }
+
+            $this->notificationService->notify(
+                $user,
+                'Slip gaji ' . $this->periodLabel($payroll->period) . ' sudah terbit',
+                'Gaji bersih Rp ' . number_format((float) $payroll->net_salary, 2, ',', '.')
+                    . ' — ' . $payroll->slip_number,
+                'payroll_issued',
+                $payroll->id
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mengirim notifikasi slip terbit: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notifikasi "slip dibayar" ke karyawan.
+     */
+    protected function notifyPayrollPaid($payroll): void
+    {
+        try {
+            $user = $payroll->employee?->user;
+
+            if (! $user) {
+                return;
+            }
+
+            $this->notificationService->notify(
+                $user,
+                'Slip gaji ' . $this->periodLabel($payroll->period) . ' sudah dibayar',
+                'Rp ' . number_format((float) $payroll->net_salary, 2, ',', '.')
+                    . ' sudah ditransfer — ' . $payroll->slip_number,
+                'payroll_paid',
+                $payroll->id
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mengirim notifikasi slip dibayar: ' . $e->getMessage());
+        }
+    }
+
+    protected function periodLabel(?string $period): string
+    {
+        try {
+            return \Illuminate\Support\Carbon::createFromFormat('Y-m', (string) $period)
+                ->locale('id')
+                ->translatedFormat('F Y');
+        } catch (\Throwable $e) {
+            return (string) $period;
+        }
     }
 
     public function deletePayroll(string $id)

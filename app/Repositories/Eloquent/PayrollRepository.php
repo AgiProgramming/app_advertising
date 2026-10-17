@@ -40,6 +40,11 @@ class PayrollRepository implements PayrollRepositoryInterface
         if (empty($data['slip_number'])) {
             $data['slip_number'] = $this->generateSlipNumber();
         }
+
+        if (empty($data['verification_token'])) {
+            $data['verification_token'] = (string) \Illuminate\Support\Str::uuid();
+        }
+
         return Payroll::create($data);
     }
 

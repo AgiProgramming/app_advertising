@@ -5,7 +5,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PayrollRequest;
 use App\Http\Requests\PayrollPaymentRequest;
 use App\Http\Resources\PayrollResource;
+use App\Models\Payroll;
 use App\Services\PayrollService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\QrCode as QrCodeImage;
+use Endroid\QrCode\Writer\PngWriter;
 use Exception;
 use Illuminate\Http\Request;
 
@@ -133,5 +137,73 @@ class PayrollController extends Controller
         );
 
         return new PayrollResource($payroll);
+    }
+
+    /**
+     * Unduh slip gaji sebagai PDF. Karyawan hanya boleh mengunduh slip miliknya.
+     */
+    public function downloadPdf(Request $request, string $id)
+    {
+        $payroll = $this->payrollService->getPayrollById($id);
+        $user = $request->user();
+
+        if ($user->role && $user->role->name === 'Karyawan') {
+            if (! $user->employee || $user->employee->id !== $payroll->employee_id) {
+                return response()->json([
+                    'message' => 'Forbidden. Anda tidak dapat mengunduh slip karyawan lain.',
+                ], 403);
+            }
+        }
+
+        $verifyUrl = url('/api/verify/' . $payroll->verification_token);
+
+        // QR dibuat sebagai PNG (dompdf tidak bisa merender SVG).
+        $qrImage = (new PngWriter())->write(
+            (new QrCodeImage($verifyUrl))->setSize(220)->setMargin(0)
+        );
+        $qrBase64 = base64_encode($qrImage->getString());
+
+        $pdf = Pdf::loadView('pdf.slip', [
+            'payroll' => $payroll,
+            'verifyUrl' => $verifyUrl,
+            'qrBase64' => $qrBase64,
+        ])->setPaper('a5');
+
+        return $pdf->download('slip-' . $payroll->slip_number . '.pdf');
+    }
+
+    /**
+     * Verifikasi keaslian slip lewat token QR (tanpa login).
+     */
+    public function verify(string $token)
+    {
+        $payroll = Payroll::with(['employee', 'spk.shop'])
+            ->where('verification_token', $token)
+            ->first();
+
+        if (! $payroll) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'Slip tidak ditemukan atau token verifikasi tidak valid.',
+            ], 404);
+        }
+
+        return response()->json([
+            'valid' => true,
+            'data' => [
+                'slip_number' => $payroll->slip_number,
+                'period' => $payroll->period,
+                'employee_name' => $payroll->employee?->name,
+                'employee_nik' => $payroll->employee?->nik
+                    ? substr($payroll->employee->nik, 0, 4) . str_repeat('*', max(0, strlen($payroll->employee->nik) - 4))
+                    : null,
+                'shop_name' => $payroll->spk?->shop?->name,
+                'job_name' => $payroll->spk?->job_name,
+                'net_salary' => (float) $payroll->net_salary,
+                'payment_status' => $payroll->payment_status,
+                'payment_date' => $payroll->payment_date,
+                'issued_at' => $payroll->created_at?->toIso8601String(),
+            ],
+        ]);
     }
 }
