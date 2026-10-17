@@ -75,7 +75,7 @@ tests/Feature/                       # 50 pengujian otomatis
 ## Dokumentasi terkait
 
 - `LAPORAN_AUDIT_API.md` — hasil audit keamanan API (90 skenario) & perbaikannya.
-- `../CI-CD.md` — penjelasan pipeline CI/CD untuk kedua repositori.
+- `CI-CD.md` — penjelasan pipeline CI/CD (disertakan di paket skripsi, satu tingkat di atas repo ini).
 
 ## Catatan keamanan
 
