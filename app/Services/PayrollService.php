@@ -1,18 +1,23 @@
 <?php
+
 namespace App\Services;
 
+use App\Repositories\Contracts\CashAdvanceRepositoryInterface;
 use App\Repositories\Contracts\PayrollRepositoryInterface;
 use App\Repositories\Contracts\SpkRepositoryInterface;
-use App\Repositories\Contracts\CashAdvanceRepositoryInterface;
 use Exception;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PayrollService
 {
     protected $payrollRepository;
+
     protected $spkRepository;
+
     protected $cashAdvanceRepository;
+
     protected NotificationService $notificationService;
 
     public function __construct(
@@ -42,14 +47,15 @@ class PayrollService
         $totalBorrowed = $this->cashAdvanceRepository->getTotalByEmployee($employeeId);
         $totalDeducted = $this->payrollRepository->getTotalCashAdvanceDeducted($employeeId);
         $remaining = $totalBorrowed - $totalDeducted;
+
         return max(0.0, round($remaining, 2));
     }
 
     public function calculatePreview(array $params): array
     {
         $spk = $this->spkRepository->getById($params['spk_id']);
-        if (!$spk->employee) {
-            throw new Exception("SPK belum memiliki karyawan yang ditugaskan.");
+        if (! $spk->employee) {
+            throw new Exception('SPK belum memiliki karyawan yang ditugaskan.');
         }
 
         $employee = $spk->employee;
@@ -67,8 +73,8 @@ class PayrollService
         // Tunjangan tidak boleh melebihi gaji kotor.
         if ($mealAllowance > $grossSalary) {
             throw new Exception(
-                "Tunjangan uang makan (Rp " . number_format($mealAllowance, 2, ',', '.') .
-                ") melebihi gaji kotor (Rp " . number_format($grossSalary, 2, ',', '.') . ")."
+                'Tunjangan uang makan (Rp '.number_format($mealAllowance, 2, ',', '.').
+                ') melebihi gaji kotor (Rp '.number_format($grossSalary, 2, ',', '.').').'
             );
         }
 
@@ -79,8 +85,8 @@ class PayrollService
 
             if ($requested > $remainingCashAdvance) {
                 throw new Exception(
-                    "Potongan kasbon (Rp " . number_format($requested, 2, ',', '.') .
-                    ") melebihi sisa kasbon karyawan (Rp " . number_format($remainingCashAdvance, 2, ',', '.') . ")."
+                    'Potongan kasbon (Rp '.number_format($requested, 2, ',', '.').
+                    ') melebihi sisa kasbon karyawan (Rp '.number_format($remainingCashAdvance, 2, ',', '.').').'
                 );
             }
 
@@ -222,14 +228,14 @@ class PayrollService
 
             $this->notificationService->notify(
                 $user,
-                'Slip gaji ' . $this->periodLabel($payroll->period) . ' sudah terbit',
-                'Gaji bersih Rp ' . number_format((float) $payroll->net_salary, 2, ',', '.')
-                    . ' — ' . $payroll->slip_number,
+                'Slip gaji '.$this->periodLabel($payroll->period).' sudah terbit',
+                'Gaji bersih Rp '.number_format((float) $payroll->net_salary, 2, ',', '.')
+                    .' — '.$payroll->slip_number,
                 'payroll_issued',
                 $payroll->id
             );
         } catch (\Throwable $e) {
-            Log::warning('Gagal mengirim notifikasi slip terbit: ' . $e->getMessage());
+            Log::warning('Gagal mengirim notifikasi slip terbit: '.$e->getMessage());
         }
     }
 
@@ -247,21 +253,21 @@ class PayrollService
 
             $this->notificationService->notify(
                 $user,
-                'Slip gaji ' . $this->periodLabel($payroll->period) . ' sudah dibayar',
-                'Rp ' . number_format((float) $payroll->net_salary, 2, ',', '.')
-                    . ' sudah ditransfer — ' . $payroll->slip_number,
+                'Slip gaji '.$this->periodLabel($payroll->period).' sudah dibayar',
+                'Rp '.number_format((float) $payroll->net_salary, 2, ',', '.')
+                    .' sudah ditransfer — '.$payroll->slip_number,
                 'payroll_paid',
                 $payroll->id
             );
         } catch (\Throwable $e) {
-            Log::warning('Gagal mengirim notifikasi slip dibayar: ' . $e->getMessage());
+            Log::warning('Gagal mengirim notifikasi slip dibayar: '.$e->getMessage());
         }
     }
 
     protected function periodLabel(?string $period): string
     {
         try {
-            return \Illuminate\Support\Carbon::createFromFormat('Y-m', (string) $period)
+            return Carbon::createFromFormat('Y-m', (string) $period)
                 ->locale('id')
                 ->translatedFormat('F Y');
         } catch (\Throwable $e) {
