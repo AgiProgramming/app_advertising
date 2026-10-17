@@ -1,0 +1,146 @@
+name: Backend CI
+
+# Pipeline integrasi berkelanjutan untuk API penggajian (Laravel).
+# Dijalankan setiap push & pull request ke branch utama, dan bisa dipicu manual.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+# Kalau ada push baru di branch yang sama, jalankan yang terbaru saja.
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Tahap 1: pemeriksaan gaya kode (cepat, gagal lebih awal)
+  # ---------------------------------------------------------------------------
+  gaya-kode:
+    name: Gaya kode (Laravel Pint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+
+      - name: Siapkan PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, dom, curl, fileinfo
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache dependensi Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Pasang dependensi
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Periksa standar format
+        run: vendor/bin/pint --test
+
+  # ---------------------------------------------------------------------------
+  # Tahap 2: pengujian otomatis terhadap database MySQL 8
+  # ---------------------------------------------------------------------------
+  pengujian:
+    name: Pengujian otomatis (MySQL 8)
+    runs-on: ubuntu-latest
+    needs: gaya-kode
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: app_advertising_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'true'
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: app_advertising_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+
+      - name: Siapkan PHP 8.4 + Xdebug (untuk cakupan kode)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, dom, curl, fileinfo, pdo_mysql, gd, zip, intl, bcmath
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Cache dependensi Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Pasang dependensi
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Siapkan berkas lingkungan
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Tunggu MySQL siap
+        run: |
+          for i in $(seq 1 30); do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -proot --silent; then
+              echo "MySQL siap."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL tidak merespons." && exit 1
+
+      - name: Jalankan pengujian (gerbang utama)
+        run: php artisan test
+
+      - name: Buat laporan cakupan kode
+        continue-on-error: true
+        run: php artisan test --coverage-clover build/logs/clover.xml
+
+      - name: Simpan laporan cakupan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: laporan-cakupan
+          path: build/logs/clover.xml
+          if-no-files-found: warn
+
+      - name: Ringkasan hasil
+        if: always()
+        run: |
+          {
+            echo "### Hasil pengujian backend"
+            echo ""
+            echo "- Standar format: **Pint**"
+            echo "- Basis data: **MySQL 8.0** (service container)"
+            echo "- Perintah: \`php artisan test\`"
+            echo "- Status: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
