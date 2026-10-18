@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Password Awal Admin
+    |--------------------------------------------------------------------------
+    |
+    | Dipakai sekali oleh `php artisan app:init-admin` saat pemasangan pertama
+    | di server. Dibaca lewat config() (bukan env() langsung) supaya tetap
+    | terbaca walaupun konfigurasi sudah di-cache dengan `config:cache`.
+    |
+    */
+
+    'init_admin_password' => env('INIT_ADMIN_PASSWORD'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

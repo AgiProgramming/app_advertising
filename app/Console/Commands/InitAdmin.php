@@ -39,7 +39,8 @@ class InitAdmin extends Command
             return self::SUCCESS;
         }
 
-        $password = (string) env('INIT_ADMIN_PASSWORD', '');
+        // config() dipakai lebih dulu karena setelah `config:cache` env() kosong.
+        $password = (string) (config('app.init_admin_password') ?: env('INIT_ADMIN_PASSWORD', ''));
 
         if (strlen($password) < 8) {
             $this->error('INIT_ADMIN_PASSWORD belum diisi di .env server (minimal 8 karakter).');

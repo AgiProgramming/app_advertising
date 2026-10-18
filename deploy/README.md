@@ -176,6 +176,14 @@ Repo backend → **Settings → Secrets and variables → Actions**:
 
 ## 8. Jalankan deploy
 
+> **Deploy pertama (belum ada `vendor/`):** `deploy.php` butuh Laravel untuk menjalankan
+> migrasi, sedangkan `vendor/` belum ada. Untuk pemasangan awal, unggah `deploy/bootstrap.php`
+> ke `public_html/bootstrap.php` lalu buka `https://domain/bootstrap.php` **sekali**.
+> Berkas itu menarik kode dari GitHub, menjalankan `composer install --no-dev` di dalam PHP
+> (tanpa `shell_exec`), lalu `migrate` + `app:init-admin`. Ia menghapus dirinya sendiri.
+> Kalau ada perintah artisan yang perlu diulang, pakai `deploy/artisan.php`
+> (`?cmd=migrate`, `?cmd=init`, `?cmd=optimize`, `?cmd=status`) lalu hapus berkasnya.
+
 GitHub → **Actions** → **Deploy ke Hosting** → **Run workflow**.
 
 Yang terjadi:
