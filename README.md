@@ -19,7 +19,7 @@ aplikasi mobile Flutter `app_advertising_mobile`.
 | Slip PDF | barryvdh/laravel-dompdf |
 | QR verifikasi | simplesoftwareio/simple-qrcode |
 | Push notifikasi | Firebase Cloud Messaging (HTTP v1) |
-| Pengujian | PHPUnit — 50 test / 144 assertion |
+| Pengujian | PHPUnit — 53 test / 158 assertion |
 | Format kode | Laravel Pint |
 
 ## Fitur utama
@@ -51,7 +51,7 @@ Butuh MySQL 8 yang berjalan. Konfigurasi ada di `.env` (`DB_*`).
 ## Pengujian
 
 ```bash
-php artisan test          # 50 test / 144 assertion
+php artisan test          # 53 test / 158 assertion
 vendor/bin/pint --test    # cek standar format
 ```
 

@@ -129,6 +129,7 @@ try {
 
     foreach ([
         'migrate' => ['--force' => true],
+        'app:init-admin' => [],
         'optimize' => [],
     ] as $command => $arguments) {
         try {

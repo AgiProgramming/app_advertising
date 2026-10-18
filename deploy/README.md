@@ -88,6 +88,10 @@ QUEUE_CONNECTION=database
 # Notifikasi push (unggah berkas service account ke storage/app/firebase/)
 FIREBASE_CREDENTIALS=/home/USERNAME/app/storage/app/firebase/service-account.json
 FIREBASE_PROJECT_ID=mann-plus
+
+# Password awal akun admin — dipakai sekali saat deploy pertama (minimal 8 karakter).
+# Setelah bisa login, ganti password dari aplikasi.
+INIT_ADMIN_PASSWORD=ganti_dengan_password_kuat
 ```
 
 > **Penting:** `APP_DEBUG=false` di server produksi. Kalau `true`, stack trace bisa terbaca publik.
@@ -174,7 +178,8 @@ Yang terjadi:
 1. Runner memasang dependensi produksi (`composer install --no-dev`).
 2. Aplikasi dipaketkan jadi `release.zip`.
 3. Zip diunggah lewat FTPS ke `~/deploy/release.zip`.
-4. Runner memanggil `deploy.php` → ekstrak ke `~/app` → `php artisan migrate --force` → `optimize`.
+4. Runner memanggil `deploy.php` → ekstrak ke `~/app` → `migrate --force` → `app:init-admin`
+   (membuat akun admin pertama kalau belum ada) → `optimize`.
 
 Cek hasilnya:
 
