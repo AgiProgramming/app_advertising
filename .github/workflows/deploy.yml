@@ -31,12 +31,12 @@ jobs:
       - name: Ambil kode
         uses: actions/checkout@v4
 
-      # Versi PHP disamakan dengan yang tersedia di hosting (Rumahweb Small: PHP 8.2)
-      # supaya paket di vendor/ cocok dengan server.
-      - name: Siapkan PHP 8.2 + Composer
+      # Versi PHP disamakan dengan yang aktif di hosting (ea-php83) supaya
+      # paket di vendor/ cocok dengan server.
+      - name: Siapkan PHP 8.3 + Composer
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: mbstring, xml, dom, curl, fileinfo, pdo_mysql, gd, zip, intl, bcmath
           coverage: none
           tools: composer:v2
@@ -101,7 +101,7 @@ jobs:
             echo "### Deploy ke hosting"
             echo ""
             echo "- Metode: **FTP/FTPS** (tanpa SSH)"
-            echo "- PHP target: **8.2** (versi hosting)"
+            echo "- PHP target: **8.3** (versi hosting)"
             echo "- Commit: \`${{ github.sha }}\`"
             echo "- Status: ${{ job.status }}"
           } >> "$GITHUB_STEP_SUMMARY"

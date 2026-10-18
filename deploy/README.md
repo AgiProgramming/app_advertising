@@ -17,13 +17,18 @@ tapi **tidak ada akses SSH**. Deploy tetap otomatis lewat GitHub Actions (FTP + 
 | FTP user & password | `namadomain` / ••• |
 | Database | `namadomain_payroll` (nama otomatis berprefix) |
 | DB user & password | `namadomain_payroll` / ••• |
-| Versi PHP | **8.2** (minimal, karena Laravel 12 butuh PHP ≥ 8.2) |
+| Versi PHP | **8.3 (ea-php83)** — minimal 8.2 karena Laravel 12 butuh PHP ≥ 8.2 |
 
 ---
 
 ## 1. Atur versi PHP
 
-cPanel → **MultiPHP Manager** → pilih domain → **PHP 8.2** → Apply.
+cPanel → **MultiPHP Manager** → centang domain → pilih **ea-php83** → Apply.
+
+> **Penting:** jangan pakai `alt-php*` (CloudLinux). Di paket ini `alt-php83` datang tanpa
+> ekstensi apa pun (intl/zip/gd/pdo_mysql kosong) dan harus diaktifkan satu per satu.
+> `ea-php83` sudah lengkap sejak awal — sudah diuji: PHP 8.3.30 dengan intl, zip, gd,
+> pdo_mysql, mbstring, bcmath, dom, fileinfo semuanya aktif.
 
 Cek di cPanel → **Select PHP Version** bahwa ekstensi ini aktif:
 `pdo_mysql, mbstring, dom/xml, curl, fileinfo, gd, zip, intl, bcmath, openssl`.
@@ -226,7 +231,8 @@ dikirim langsung, bukan lewat queue). Kalau nanti memakai queue:
 
 ## Batasan paket murah yang perlu diketahui
 
-1. **PHP maksimal 8.2** — Laravel 12 memang mendukung PHP ≥ 8.2, tapi jangan pakai fitur PHP 8.3+.
+1. **PHP 8.3 (ea-php83)** — sudah diuji lengkap ekstensinya. Jangan pakai `alt-php*` tanpa
+   mengaktifkan ekstensi dulu, dan jangan turun ke 7.4 (Laravel 12 butuh ≥ 8.2).
 2. **1 GB penyimpanan** — aplikasi + vendor ± 120 MB, sisanya untuk log & backup. Bersihkan
    `storage/logs` berkala.
 3. **1 core / 1 GB RAM** — cukup untuk demo & pemakaian bengkel kecil; jangan pasang proses berat
