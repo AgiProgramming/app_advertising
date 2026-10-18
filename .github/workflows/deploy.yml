@@ -61,7 +61,7 @@ jobs:
             -x '.git/*' '.github/*' '.env' '.env.*' 'tests/*' 'deploy/*' 'node_modules/*' \
                'storage/logs/*' 'storage/framework/cache/*' 'storage/framework/sessions/*' \
                'storage/framework/views/*' 'bootstrap/cache/*' '*.sqlite' \
-               '.phpunit.cache/*' '.phpunit.result.cache' 'release.zip'
+               'firebase/*' '.phpunit.cache/*' '.phpunit.result.cache' 'release.zip'
           echo "Ukuran rilis: $(du -h release.zip | cut -f1)"
 
       - name: Unggah ke hosting (FTPS)
@@ -77,6 +77,36 @@ jobs:
             --upload-file release.zip \
             "ftp://$FTP_HOST/deploy/release.zip"
           echo "Unggahan selesai."
+
+      # Kredensial Firebase hanya diunggah kalau secret FIREBASE_SA_JSON diisi.
+      # Isinya sama dengan berkas service account dari Firebase Console.
+      - name: Siapkan kredensial Firebase
+        env:
+          FIREBASE_SA_JSON: ${{ secrets.FIREBASE_SA_JSON }}
+        run: |
+          if [ -n "$FIREBASE_SA_JSON" ]; then
+            mkdir -p firebase
+            printf '%s' "$FIREBASE_SA_JSON" > firebase/service-account.json
+            echo "Kredensial Firebase siap."
+          else
+            echo "Secret FIREBASE_SA_JSON kosong — push notification akan nonaktif."
+          fi
+
+      - name: Unggah kredensial Firebase
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          if [ -f firebase/service-account.json ]; then
+            curl --fail --silent --show-error \
+              --ssl-reqd \
+              --user "$FTP_USER:$FTP_PASS" \
+              --ftp-create-dirs \
+              --upload-file firebase/service-account.json \
+              "ftp://$FTP_HOST/app/storage/app/firebase/service-account.json"
+            echo "Kredensial Firebase terunggah."
+          fi
 
       - name: Ekstrak & migrasi di hosting
         env:
