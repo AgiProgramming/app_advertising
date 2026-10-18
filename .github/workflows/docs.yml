@@ -1,0 +1,57 @@
+name: Dokumentasi
+
+# Membangun situs dokumentasi (MkDocs Material) dan menerbitkannya ke GitHub Pages.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bangun:
+    name: Bangun situs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+
+      - name: Siapkan Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Pasang MkDocs Material
+        run: pip install mkdocs-material==9.7.7
+
+      - name: Build
+        run: mkdocs build --strict
+
+      - name: Unggah artefak Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  terbitkan:
+    name: Terbitkan ke GitHub Pages
+    needs: bangun
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

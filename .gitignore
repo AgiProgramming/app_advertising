@@ -25,3 +25,6 @@ Thumbs.db
 
 # Kredensial Firebase (jangan pernah di-commit)
 /storage/app/firebase/*.json
+
+# hasil build dokumentasi
+site/

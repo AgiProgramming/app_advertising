@@ -1,0 +1,69 @@
+site_name: Dokumentasi Mann Plus Payroll
+site_description: API penggajian dan aplikasi mobile untuk Bengkel Mann Plus Advertising
+site_author: AgiProgramming
+repo_url: https://github.com/AgiProgramming/app_advertising
+repo_name: AgiProgramming/app_advertising
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: id
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Mode gelap
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Mode terang
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Beranda: index.md
+  - Teknologi: teknologi.md
+  - Arsitektur & Data: arsitektur.md
+  - Referensi API: api.md
+  - Aturan Penggajian: penggajian.md
+  - Aplikasi Mobile: mobile.md
+  - Deployment: deployment.md
+  - CI/CD: ci-cd.md
+  - Keamanan: keamanan.md
+  - Pengujian: pengujian.md
+  - Troubleshooting: troubleshooting.md
+  - Lampiran: lampiran.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+      title: Di halaman ini
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+
+plugins:
+  - search
