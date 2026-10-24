@@ -7,6 +7,7 @@ use App\Http\Requests\PayrollPaymentRequest;
 use App\Http\Requests\PayrollRequest;
 use App\Http\Resources\PayrollResource;
 use App\Models\Payroll;
+use App\Models\Spk;
 use App\Services\PayrollService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Endroid\QrCode\QrCode as QrCodeImage;
@@ -46,6 +47,20 @@ class PayrollController extends Controller
      */
     public function preview(Request $request)
     {
+        // Kompatibilitas aplikasi versi lama: kirim spk_id saja.
+        // Karyawan & periode diambil dari SPK tersebut.
+        if (! $request->filled('employee_id') && $request->filled('spk_id')) {
+            $spk = Spk::with('assignments')->find($request->input('spk_id'));
+
+            if ($spk) {
+                $request->merge([
+                    'employee_id' => optional($spk->assignments->firstWhere('role', 'worker'))->employee_id
+                        ?? $spk->employee_id,
+                    'period' => $request->input('period') ?: optional($spk->date)->format('Y-m'),
+                ]);
+            }
+        }
+
         $data = $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'period' => ['required', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
@@ -100,6 +115,13 @@ class PayrollController extends Controller
             'cash_advance_deduction' => $calc['cash_advance_deduction'],
             'net_salary' => $calc['net_salary'],
             'is_negative' => $calc['net_salary'] < 0,
+
+            // Alias lama supaya aplikasi versi sebelumnya tetap menampilkan angka.
+            'original_spk_value' => $calc['gross_share'],
+            'net_spk_value' => round($calc['gross_share'] - $calc['ppn_amount'], 2),
+            'salary_percentage' => $calc['commission_rate'],
+            'gross_salary' => $calc['gross_share'],
+            'meal_allowance' => $calc['meal_deduction'],
         ];
     }
 
