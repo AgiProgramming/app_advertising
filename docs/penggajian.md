@@ -1,98 +1,163 @@
 # Aturan Perhitungan Penggajian
 
+Perhitungan mengikuti cara kerja bengkel yang sebenarnya: **satu SPK dikerjakan beberapa orang**,
+seorang karyawan **boleh mengambil beberapa SPK**, dan bila ada yang tidak masuk kerja,
+**orang pengganti** mengambil hari kerja miliknya.
+
 Seluruh perhitungan berada di `app/Services/PayrollService.php` dan dipakai bersama oleh
 **pratinjau** (`/api/payrolls/preview`) dan **penyimpanan slip** (`POST /api/payrolls`),
 sehingga angka yang dilihat admin sebelum menyimpan sama dengan angka yang tersimpan.
 
+## Struktur data
+
+| Tabel | Isi |
+|---|---|
+| `spks` | dokumen SPK dari klien: nomor, nilai, tanggal mulai/selesai, durasi |
+| `spk_employees` | penugasan: siapa mengerjakan SPK apa, peran `worker`/`replacement`, berapa hari masuk |
+| `payrolls` | satu slip = satu karyawan untuk satu periode |
+| `payroll_items` | rincian bagian karyawan dari tiap SPK di dalam slip |
+
+`duration_days` dihitung otomatis dari `start_date` sampai `end_date` (inklusif).
+
 ## Rumus
 
+### 1. Bagian dari satu SPK
+
 ```
-1. net_spk_value      = spk_value − (spk_value × 3%)          # PPN 3%
-2. komisi             = net_spk_value × salary_percentage%    # default 22%
-3. gaji_kotor         = komisi + meal_allowance
-4. potongan_kasbon    = min(sisa_kasbon, gaji_kotor − meal_allowance)
-5. net_salary         = max(0, gaji_kotor − potongan_kasbon)
+nilai_harian = nilai_SPK ÷ (jumlah_pekerja × jumlah_hari_SPK)
+bagian       = nilai_harian × hari_karyawan_masuk
 ```
 
-Keterangan:
+`jumlah_pekerja` hanya menghitung peran `worker` — **pengganti tidak menambah pembagi**,
+karena pengganti mengambil hari milik orang yang digantikan.
 
-| Istilah | Arti |
-|---|---|
-| `spk_value` | nilai pekerjaan pada SPK |
-| **PPN 3%** | potongan pajak yang dibebankan atas nilai SPK |
-| **komisi 22%** | bagian karyawan dari nilai bersih SPK (persentase bisa diubah admin) |
-| `meal_allowance` | tunjangan makan (opsional, diisi admin) |
-| `sisa_kasbon` | total kasbon karyawan dikurangi yang sudah pernah dipotong |
-| `net_salary` | **gaji bersih** yang muncul di slip |
+Contoh: SPK Rp7.500.000, 3 hari, 5 pekerja → nilai harian = 7.500.000 ÷ 15 = **Rp500.000**.
+
+| Orang | Peran | Hari masuk | Bagian |
+|---|---|---|---|
+| Pekerja 1 | worker | 1 | Rp500.000 |
+| Pengganti | replacement | 2 | Rp1.000.000 |
+| Pekerja 2–5 | worker | 3 | Rp1.500.000 masing-masing |
+
+Total kelima slot tetap Rp7.500.000.
+
+### 2. Bagian kotor satu karyawan
+
+```
+bagian_kotor = Σ bagian dari semua SPK pada periode itu
+```
+
+### 3. Potongan
+
+```
+PPN          = 4%  × bagian_kotor
+komisi       = 22% × (bagian_kotor − PPN)      # milik Mann Plus
+uang_makan   = Rp100.000 × jumlah SPK yang diikuti
+kasbon       = potongan utang karyawan (opsional)
+```
+
+```
+gaji_bersih  = bagian_kotor − PPN − komisi − uang_makan − kasbon
+```
+
+**Gaji bersih boleh minus.** Bila potongan melebihi bagian karyawan, slip menampilkan nilai
+minus apa adanya (tidak dipotong menjadi nol), dan aplikasi menandainya `is_negative`.
+
+### 4. Tarif yang bisa diubah
+
+| Konfigurasi | Default | Variabel `.env` |
+|---|---|---|
+| `payroll.ppn_rate` | 4% | `PAYROLL_PPN_RATE` |
+| `payroll.commission_rate` | 22% | `PAYROLL_COMMISSION_RATE` |
+| `payroll.meal_rate` | Rp100.000 | `PAYROLL_MEAL_RATE` |
+
+Tarif yang dipakai **disimpan di setiap slip** (`ppn_rate`, `commission_rate`, `meal_rate`),
+sehingga slip lama tetap akurat walau tarif diubah kemudian.
+
+## Contoh perhitungan nyata
+
+### Contoh 1 — dua SPK, satu orang (contoh pemilik bengkel)
+
+Karyawan A ikut SPK A (nilai Rp2.500.000, 4 orang) dan SPK B (nilai Rp2.500.000, 3 orang).
+
+| Tahap | Perhitungan | Hasil |
+|---|---|---|
+| Bagian SPK A | 2.500.000 ÷ 4 | 625.000,00 |
+| Bagian SPK B | 2.500.000 ÷ 3 | 833.333,33 |
+| **Bagian kotor** | | **1.458.333,33** |
+| PPN 4% | × 4% | −58.333,33 |
+| Setelah PPN | | 1.400.000,00 |
+| Komisi 22% | × 22% | −308.000,00 |
+| Setelah komisi | | 1.092.000,00 |
+| Uang makan | 2 SPK × 100.000 | −200.000,00 |
+| **Gaji bersih** | | **892.000,00** |
+
+### Contoh 2 — pekerja yang hanya masuk sehari
+
+SPK Rp7.500.000, 3 hari, 5 pekerja. Pekerja 1 hanya masuk hari pertama, pengganti masuk hari kedua
+dan ketiga.
+
+| | Pekerja 1 | Pengganti |
+|---|---|---|
+| Bagian kotor | 500.000,00 | 1.000.000,00 |
+| PPN 4% | −20.000,00 | −40.000,00 |
+| Komisi 22% | −105.600,00 | −211.200,00 |
+| Uang makan | −100.000,00 | −100.000,00 |
+| **Gaji bersih** | **274.400,00** | **648.800,00** |
+
+### Contoh 3 — hasil minus
+
+SPK Rp500.000 dikerjakan 5 orang, masing-masing 1 hari. Bagian per orang Rp100.000.
+
+```
+100.000 − 4.000 (PPN) = 96.000
+96.000 − 21.120 (komisi) = 74.880
+74.880 − 100.000 (uang makan) = −25.120
+```
+
+Slip menampilkan **−Rp25.120,00** dan diberi keterangan bahwa potongan melebihi bagian karyawan.
 
 ## Batas pengaman
 
 !!! danger "Potongan kasbon tidak boleh melebihi utang"
     Nilai `cash_advance_deduction` yang dikirim klien **ditolak (422)** bila lebih besar dari sisa
     kasbon karyawan. Bila admin tidak mengisi, sistem memotong otomatis sebesar
-    `min(sisa_kasbon, gaji_kotor − meal_allowance)` sehingga gaji tidak pernah minus.
+    `min(sisa_kasbon, bagian setelah komisi − uang makan)`.
 
 Aturan lain:
 
-- `meal_allowance` **tidak boleh melebihi gaji kotor** (ditolak 422).
+- `days_worked` tidak boleh melebihi `duration_days` (otomatis dipotong saat disimpan).
+- `end_date` tidak boleh sebelum `start_date` (ditolak 422).
 - `period` wajib berformat `Y-m` (contoh `2026-10`).
-- Satu SPK hanya boleh punya **satu slip**.
-- `net_salary` tidak pernah negatif (`max(0, ...)`).
+- Satu karyawan hanya boleh punya **satu slip per periode**.
+- SPK hanya masuk hitungan bila tanggal SPK berada di periode tersebut.
+- Karyawan dengan `days_worked = 0` tidak dihitung (mis. absen penuh tanpa pengganti).
 
-## Contoh perhitungan nyata
+## Alur pemakaian
 
-### Contoh 1 — slip dengan kasbon (data uji)
-
-| Komponen | Nilai |
-|---|---|
-| Nilai SPK | 1.463.763,00 |
-| PPN 3% | −43.912,89 |
-| Nilai bersih | 1.419.850,11 |
-| Komisi 22% | 312.367,02 |
-| Tunjangan makan | 100.000,00 |
-| Potongan kasbon | 200.000,00 |
-| **Gaji bersih** | **212.367,02** |
-
-Perhitungan: `1.463.763 × 3% = 43.912,89` → `1.463.763 − 43.912,89 = 1.419.850,11`
-→ `1.419.850,11 × 22% = 312.367,02` → `312.367,02 + 100.000 − 200.000 = 212.367,02` ✔
-
-### Contoh 2 — pratinjau di aplikasi
-
-| Komponen | Nilai |
-|---|---|
-| Nilai SPK | 5.000.000,00 |
-| PPN 3% | 150.000,00 |
-| Nilai bersih | 4.850.000,00 |
-| Komisi 22% | 1.067.000,00 |
-| **Gaji bersih** | **1.067.000,00** |
-
-### Contoh 3 — slip produksi (pengujian notifikasi)
-
-SPK `2.000.000` → PPN 3% `60.000` → nilai bersih `1.940.000` → komisi 22% = **426.800,00**
-(angka ini yang muncul pada notifikasi push "Gaji bersih Rp 426.800,00").
-
-## Mengapa PPN dulu, baru komisi?
-
-Nilai SPK adalah nilai kontrak dengan toko. Pajak (PPN) mengurangi nilai kontrak, sehingga bagian
-karyawan dihitung dari nilai **bersih** setelah pajak — bukan dari nilai kotor. Urutan ini
-disepakati dengan pemilik bengkel dan dijaga oleh pengujian otomatis
-(`tests/Feature/PayrollCalculationTest.php`).
-
-## Kasbon
-
-- Kasbon dicatat per karyawan (`cash_advances`), tidak otomatis memotong gaji saat dibuat.
-- Pemotongan terjadi saat slip dibuat: admin boleh mengisi nominal, atau membiarkan sistem
-  memotong maksimal sebesar sisa utang.
-- Sisa kasbon = `total kasbon − total yang sudah dipotong`, tidak pernah negatif.
+1. Admin membuat SPK: nilai, tanggal mulai/selesai, lalu memilih anggotanya
+   (pekerja + hari masuk, dan pengganti bila ada).
+2. Admin membuka **Pratinjau gaji**: pilih karyawan dan periode → rincian tiap SPK tampil.
+3. Simpan slip untuk satu karyawan, atau **buat sekaligus** untuk semua karyawan pada periode itu
+   (`POST /api/payrolls/generate`).
+4. Slip dapat diunduh sebagai PDF, diverifikasi lewat QR, dan karyawan menerima notifikasi.
 
 ## Pengujian yang menjaga aturan ini
 
-| Nama uji | Yang dijaga |
-|---|---|
-| `test_perhitungan_gaji_sesuai_rumus` | urutan PPN → komisi → tunjangan |
-| `test_potongan_kasbon_melebihi_sisa_ditolak` | batas potongan kasbon (422) |
-| `test_tunjangan_makan_melebihi_gaji_kotor_ditolak` | tunjangan tidak melebihi gaji kotor |
-| `test_slip_dihapus_mengembalikan_status_spk` | rollback status SPK |
+`tests/Feature/PayrollCalculationTest.php` (12 kasus) dan `tests/Feature/SpkMemberTest.php` (5 kasus)
+mengunci perilaku berikut:
 
-Uji-uji ini yang terbukti **menangkap kesalahan** saat dilakukan demo regresi: menghapus aturan
-batas kasbon membuat 1 uji gagal (`1 failed, 52 passed`) sebelum kode dikembalikan.
+- pembagian per hari kerja dan peran pengganti
+- contoh dua SPK di atas menghasilkan tepat **892.000**
+- uang makan dipotong per SPK, bukan per slip
+- hasil minus tetap minus
+- satu slip per karyawan per periode
+- pembuatan slip massal melewati karyawan yang sudah punya slip
+- kasbon tidak boleh melebihi sisa utang
+- aplikasi versi lama (`spk_id` saja) masih didukung
+
+Jalankan dengan:
+
+```bash
+php artisan test --filter="PayrollCalculationTest|SpkMemberTest"
+```

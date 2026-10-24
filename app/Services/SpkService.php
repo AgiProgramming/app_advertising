@@ -31,11 +31,16 @@ class SpkService
         return DB::transaction(function () use ($data) {
             $members = $this->pullMembers($data);
 
+            // Klien lama hanya mengirim employee_id: jadikan dia pekerja tunggal.
+            if ($members === null && ! empty($data['employee_id'])) {
+                $members = [['employee_id' => $data['employee_id'], 'role' => 'worker']];
+            }
+
             $data['duration_days'] = $this->resolveDuration($data);
 
             $spk = $this->spkRepository->create($data);
 
-            $this->syncMembers($spk, $members);
+            $this->syncMembers($spk, $members ?? []);
 
             return $spk->fresh();
         });

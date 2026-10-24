@@ -345,4 +345,34 @@ class PayrollCalculationTest extends TestCase
             ->getJson('/api/karyawan/payrolls/'.$slipSari['id'])
             ->assertStatus(403);
     }
+
+    /**
+     * Aplikasi versi lama masih mengirim spk_id saja; harus tetap jalan.
+     */
+    public function test_klien_lama_masih_bisa_membuat_slip_dengan_spk_id(): void
+    {
+        $budi = $this->karyawan('budi');
+
+        $spk = $this->auth($this->adminToken())
+            ->postJson('/api/spks', [
+                'date' => '2026-10-05',
+                'shop_id' => $this->shop('SHOP-LAMA')->id,
+                'job_name' => 'Neon Box',
+                'spk_value' => 1000000,
+                'employee_id' => $budi->employee->id,
+            ])
+            ->assertStatus(201)
+            ->json('data');
+
+        // Tanpa daftar anggota, karyawan pada SPK otomatis jadi pekerja tunggal.
+        $this->assertSame(1, $spk['slot_count']);
+
+        $slip = $this->auth($this->adminToken())
+            ->postJson('/api/payrolls', ['spk_id' => $spk['id'], 'period' => '2026-10'])
+            ->assertStatus(201)
+            ->json('data');
+
+        $this->assertCount(1, $slip['items']);
+        $this->assertEqualsWithDelta(648800, (float) $slip['net_salary'], 0.01);
+    }
 }

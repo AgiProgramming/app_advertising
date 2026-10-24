@@ -137,17 +137,48 @@ Contoh tambah karyawan:
 
 ```http
 POST /api/payrolls/preview
-{ "spk_id": "uuid", "period": "2026-10", "meal_allowance": 100000 }
+{ "employee_id": "uuid", "period": "2026-10" }
 ```
 
 ```json
 {
-  "original_spk_value": 3500000,
-  "net_spk_value": 3395000,
-  "salary_percentage": 22,
-  "meal_allowance": 100000,
+  "employee": { "id": "uuid", "name": "Budi", "nik": "EMP-001" },
+  "period": "2026-10",
+  "spk_count": 2,
+  "items": [
+    { "spk_number": "SPK-BE-CO/2026/03/016/004390", "spk_value": 2500000,
+      "slot_count": 4, "duration_days": 1, "days_worked": 1,
+      "daily_rate": 625000, "share_amount": 625000 },
+    { "spk_number": "SPK-BE-CO/2026/03/016/004881", "spk_value": 2500000,
+      "slot_count": 3, "duration_days": 1, "days_worked": 1,
+      "daily_rate": 833333.33, "share_amount": 833333.33 }
+  ],
+  "gross_share": 1458333.33,
+  "ppn_rate": 4, "ppn_amount": 58333.33,
+  "commission_rate": 22, "commission_amount": 308000,
+  "meal_rate": 100000, "meal_count": 2, "meal_deduction": 200000,
   "cash_advance_deduction": 0,
-  "net_salary": 846900
+  "net_salary": 892000,
+  "is_negative": false
+}
+```
+
+Rincian rumusnya ada di halaman [Aturan Penggajian](penggajian.md).
+
+### Buat slip massal
+
+```http
+POST /api/payrolls/generate
+{ "period": "2026-10" }
+```
+
+Membuat slip untuk **semua karyawan** yang punya SPK pada periode itu. Karyawan yang sudah punya
+slip dilewati.
+
+```json
+{
+  "message": "3 slip dibuat, 0 dilewati.",
+  "data": { "period": "2026-10", "created_count": 3, "skipped_count": 0, "created": [ ... ] }
 }
 ```
 
@@ -158,8 +189,9 @@ PATCH /api/payrolls/{id}/payment
 { "payment_date": "2026-10-18" }
 ```
 
-Efek: `payment_status` menjadi `Sudah Dibayar`, SPK terkait menjadi `Selesai` + `Sudah Dibayar`,
-dan notifikasi `payroll_paid` dikirim ke karyawan.
+Efek: `payment_status` menjadi `Sudah Dibayar` dan notifikasi `payroll_paid` dikirim ke karyawan.
+Status SPK **tidak** ikut berubah — status pekerjaan dan pembayaran SPK diatur terpisah oleh admin.
+
 
 ## Notifikasi
 
