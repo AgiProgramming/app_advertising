@@ -41,41 +41,30 @@ class PayrollController extends Controller
         return PayrollResource::collection($payrolls);
     }
 
+    /**
+     * Pratinjau gaji seorang karyawan pada satu periode (belum disimpan).
+     */
     public function preview(Request $request)
     {
-        $request->validate([
-            'spk_id' => 'required|exists:spks,id',
-            'salary_percentage' => 'nullable|numeric|min:0|max:100',
-            'meal_allowance' => 'nullable|numeric|min:0',
+        $data = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'period' => ['required', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+            'ppn_rate' => 'nullable|numeric|min:0|max:100',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'meal_rate' => 'nullable|numeric|min:0',
             'cash_advance_deduction' => 'nullable|numeric|min:0',
         ]);
 
         try {
-            $preview = $this->payrollService->calculatePreview($request->all());
+            $calc = $this->payrollService->calculateForEmployee(
+                $data['employee_id'],
+                $data['period'],
+                $data
+            );
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'spk_id' => $preview['spk']->id,
-                    'spk_number' => $preview['spk']->spk_number,
-                    'job_name' => $preview['spk']->job_name,
-                    'shop_name' => $preview['spk']->shop ? $preview['spk']->shop->name : null,
-                    'employee' => [
-                        'id' => $preview['employee']->id,
-                        'name' => $preview['employee']->name,
-                        'nik' => $preview['employee']->nik,
-                    ],
-                    'original_spk_value' => $preview['original_spk_value'],
-                    'ppn_percentage' => $preview['ppn_percentage'],
-                    'ppn_amount' => $preview['ppn_amount'],
-                    'net_spk_value' => $preview['net_spk_value'],
-                    'salary_percentage' => $preview['salary_percentage'],
-                    'gross_salary' => $preview['gross_salary'],
-                    'meal_allowance' => $preview['meal_allowance'],
-                    'remaining_cash_advance' => $preview['remaining_cash_advance'],
-                    'cash_advance_deduction' => $preview['cash_advance_deduction'],
-                    'net_salary' => $preview['net_salary'],
-                ],
+                'data' => $this->previewPayload($calc),
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -85,17 +74,75 @@ class PayrollController extends Controller
         }
     }
 
+    /**
+     * Susun rincian pratinjau agar mudah dipakai aplikasi.
+     */
+    protected function previewPayload(array $calc): array
+    {
+        return [
+            'employee' => [
+                'id' => $calc['employee']->id,
+                'name' => $calc['employee']->name,
+                'nik' => $calc['employee']->nik,
+            ],
+            'period' => $calc['period'],
+            'items' => $calc['items'],
+            'spk_count' => count($calc['items']),
+            'gross_share' => $calc['gross_share'],
+            'ppn_rate' => $calc['ppn_rate'],
+            'ppn_amount' => $calc['ppn_amount'],
+            'commission_rate' => $calc['commission_rate'],
+            'commission_amount' => $calc['commission_amount'],
+            'meal_rate' => $calc['meal_rate'],
+            'meal_count' => $calc['meal_count'],
+            'meal_deduction' => $calc['meal_deduction'],
+            'remaining_cash_advance' => $calc['remaining_cash_advance'],
+            'cash_advance_deduction' => $calc['cash_advance_deduction'],
+            'net_salary' => $calc['net_salary'],
+            'is_negative' => $calc['net_salary'] < 0,
+        ];
+    }
+
     public function store(PayrollRequest $request)
     {
         try {
             $payroll = $this->payrollService->createPayroll($request->validated());
 
-            return new PayrollResource($payroll);
+            return (new PayrollResource($payroll))->response()->setStatusCode(201);
         } catch (Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Buat slip sekaligus untuk semua karyawan yang punya SPK pada periode itu.
+     */
+    public function generate(Request $request)
+    {
+        $data = $request->validate([
+            'period' => ['required', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+        ]);
+
+        try {
+            $result = $this->payrollService->generateForPeriod($data['period']);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $created = PayrollResource::collection(collect($result['created']))->resolve();
+
+        return response()->json([
+            'message' => count($created).' slip dibuat, '.count($result['skipped']).' dilewati.',
+            'data' => [
+                'period' => $result['period'],
+                'created_count' => count($created),
+                'skipped_count' => count($result['skipped']),
+                'created' => $created,
+                'skipped' => $result['skipped'],
+            ],
+        ], 201);
     }
 
     public function show(Request $request, string $id)
@@ -171,6 +218,7 @@ class PayrollController extends Controller
 
         $pdf = Pdf::loadView('pdf.slip', [
             'payroll' => $payroll,
+            'items' => $payroll->items,
             'verifyUrl' => $verifyUrl,
             'qrBase64' => $qrBase64,
         ])->setPaper('a5');
@@ -183,7 +231,7 @@ class PayrollController extends Controller
      */
     public function verify(string $token)
     {
-        $payroll = Payroll::with(['employee', 'spk.shop'])
+        $payroll = Payroll::with(['employee', 'items'])
             ->where('verification_token', $token)
             ->first();
 
@@ -203,8 +251,8 @@ class PayrollController extends Controller
                 'employee_nik' => $payroll->employee?->nik
                     ? substr($payroll->employee->nik, 0, 4).str_repeat('*', max(0, strlen($payroll->employee->nik) - 4))
                     : null,
-                'shop_name' => $payroll->spk?->shop?->name,
-                'job_name' => $payroll->spk?->job_name,
+                'spk_count' => $payroll->items->count(),
+                'gross_share' => (float) $payroll->gross_share,
                 'net_salary' => (float) $payroll->net_salary,
                 'payment_status' => $payroll->payment_status,
                 'payment_date' => $payroll->payment_date,

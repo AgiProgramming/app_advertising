@@ -22,10 +22,13 @@ class SlipDocumentTest extends TestCase
             $spkAttributes['employee_id'] = $karyawan->employee->id;
         }
 
-        $spk = $this->spk($spkAttributes);
+        $employeeId = $spkAttributes['employee_id'];
+
+        $spk = $this->spk(array_merge(['date' => '2026-10-05'], $spkAttributes));
+        $this->addMembers($spk, [['employee_id' => $employeeId]]);
 
         return $this->asToken($adminToken)
-            ->postJson('/api/payrolls', ['spk_id' => $spk->id, 'period' => '2026-10'])
+            ->postJson('/api/payrolls', ['employee_id' => $employeeId, 'period' => '2026-10'])
             ->assertStatus(201)
             ->json('data');
     }

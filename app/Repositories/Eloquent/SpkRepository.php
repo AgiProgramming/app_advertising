@@ -9,9 +9,16 @@ class SpkRepository implements SpkRepositoryInterface
 {
     public function getAll(?string $employeeId = null)
     {
-        $query = Spk::with(['shop', 'employee'])->orderBy('created_at', 'desc');
+        $query = Spk::with(['shop', 'employee', 'assignments.employee', 'assignments.replacedEmployee'])
+            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc');
+
+        // Karyawan melihat SPK tempat dia bertugas, baik sebagai pekerja maupun pengganti.
         if ($employeeId) {
-            $query->where('employee_id', $employeeId);
+            $query->where(function ($sub) use ($employeeId) {
+                $sub->where('employee_id', $employeeId)
+                    ->orWhereHas('assignments', fn ($a) => $a->where('employee_id', $employeeId));
+            });
         }
 
         return $query->get();
@@ -19,12 +26,15 @@ class SpkRepository implements SpkRepositoryInterface
 
     public function getById(string $id)
     {
-        return Spk::with(['shop', 'employee'])->findOrFail($id);
+        return Spk::with(['shop', 'employee', 'assignments.employee', 'assignments.replacedEmployee'])
+            ->findOrFail($id);
     }
 
     public function create(array $data)
     {
-        $data['spk_number'] = $this->generateSpkNumber();
+        if (empty($data['spk_number'])) {
+            $data['spk_number'] = $this->generateSpkNumber();
+        }
 
         return Spk::create($data);
     }
@@ -45,7 +55,7 @@ class SpkRepository implements SpkRepositoryInterface
         return true;
     }
 
-    // Logika pembuatan SPK Otomatis
+    // Logika pembuatan nomor SPK otomatis (dipakai bila nomor tidak diisi manual).
     public function generateSpkNumber()
     {
         $datePrefix = date('Ymd');

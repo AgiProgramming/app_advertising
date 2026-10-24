@@ -43,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/employees/{employeeId}/cash-advances-total', [CashAdvanceController::class, 'summaryByEmployee']);
         // Payroll / Slip Gaji
         Route::post('payrolls/preview', [PayrollController::class, 'preview']);
+        Route::post('payrolls/generate', [PayrollController::class, 'generate']);
         Route::patch('payrolls/{id}/payment', [PayrollController::class, 'updatePayment']);
         Route::apiResource('payrolls', PayrollController::class);
         // Dashboard Admin

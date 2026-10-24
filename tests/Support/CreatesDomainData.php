@@ -80,9 +80,27 @@ trait CreatesDomainData
             'shop_id' => $this->shop('SHOP-'.uniqid())->id,
             'job_name' => 'Neon Box',
             'spk_value' => 1000000,
+            'duration_days' => 1,
             'job_status' => 'Belum Dikerjakan',
             'payment_status' => 'Belum Dibayar',
         ], $attributes));
+    }
+
+    /**
+     * Tambahkan anggota (pekerja/pengganti) ke sebuah SPK.
+     */
+    protected function addMembers(Spk $spk, array $members): Spk
+    {
+        foreach ($members as $member) {
+            $spk->assignments()->create([
+                'employee_id' => $member['employee_id'],
+                'role' => $member['role'] ?? 'worker',
+                'replacement_for_id' => $member['replacement_for_id'] ?? null,
+                'days_worked' => $member['days_worked'] ?? max(1, (int) ($spk->duration_days ?: 1)),
+            ]);
+        }
+
+        return $spk->fresh();
     }
 
     protected function cashAdvance(Employee $employee, float $amount): CashAdvance

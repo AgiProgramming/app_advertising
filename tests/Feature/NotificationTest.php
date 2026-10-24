@@ -72,10 +72,11 @@ class NotificationTest extends TestCase
             ->assertStatus(201);
 
         $adminToken = $this->tokenFor($this->admin());
-        $spk = $this->spk(['employee_id' => $karyawan->employee->id, 'spk_value' => 1000000]);
+        $spk = $this->spk(['date' => '2026-10-05', 'employee_id' => $karyawan->employee->id, 'spk_value' => 1000000]);
+        $this->addMembers($spk, [['employee_id' => $karyawan->employee->id]]);
 
         $this->asToken($adminToken)
-            ->postJson('/api/payrolls', ['spk_id' => $spk->id, 'period' => '2026-10'])
+            ->postJson('/api/payrolls', ['employee_id' => $karyawan->employee->id, 'period' => '2026-10'])
             ->assertStatus(201);
 
         $this->assertDatabaseHas('app_notifications', [
@@ -94,10 +95,11 @@ class NotificationTest extends TestCase
     {
         $karyawan = $this->karyawan('budi', ['nik' => 'EMP-BUDI']);
         $adminToken = $this->tokenFor($this->admin());
-        $spk = $this->spk(['employee_id' => $karyawan->employee->id]);
+        $spk = $this->spk(['date' => '2026-10-05', 'employee_id' => $karyawan->employee->id]);
+        $this->addMembers($spk, [['employee_id' => $karyawan->employee->id]]);
 
         $slip = $this->asToken($adminToken)
-            ->postJson('/api/payrolls', ['spk_id' => $spk->id, 'period' => '2026-10'])
+            ->postJson('/api/payrolls', ['employee_id' => $karyawan->employee->id, 'period' => '2026-10'])
             ->assertStatus(201)
             ->json('data');
 

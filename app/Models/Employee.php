@@ -27,6 +27,12 @@ class Employee extends Model
         return $this->hasMany(Spk::class);
     }
 
+    /** Penugasan pada SPK (sebagai pekerja maupun pengganti). */
+    public function spkAssignments()
+    {
+        return $this->hasMany(SpkEmployee::class);
+    }
+
     public function payrolls()
     {
         return $this->hasMany(Payroll::class);

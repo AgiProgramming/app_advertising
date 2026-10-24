@@ -1,11 +1,12 @@
 @php
-    $original = (float) $payroll->original_spk_value;
-    $netSpk = (float) $payroll->net_spk_value;
-    $percentage = (float) $payroll->salary_percentage;
-    $ppn = round($original - $netSpk, 2);
-    $gross = round($netSpk * $percentage / 100, 2);
+    use Illuminate\Support\Str;
+
+    $items = $items ?? collect();
     $fmt = fn ($value) => number_format((float) $value, 2, ',', '.');
+    $net = (float) $payroll->net_salary;
+    $netLabel = ($net < 0 ? '- Rp ' : 'Rp ').$fmt(abs($net));
     $periodLabel = \Illuminate\Support\Carbon::createFromFormat('Y-m', $payroll->period)->locale('id')->translatedFormat('F Y');
+    $pct = fn ($value) => rtrim(rtrim(number_format((float) $value, 2, ',', '.'), '0'), ',');
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -13,7 +14,7 @@
     <meta charset="utf-8">
     <title>Slip Gaji {{ $payroll->slip_number }}</title>
     <style>
-        @page { margin: 16px 18px; }
+        @page { margin: 14px 16px; }
         * { box-sizing: border-box; }
         body { font-family: 'DejaVu Sans Mono', monospace; font-size: 9px; color: #0F172A; margin: 0; }
         .head { text-align: center; border-bottom: 1px dashed #CBD5E1; padding-bottom: 7px; }
@@ -29,6 +30,7 @@
         .sep-double { border-top: 3px double #CBD5E1; margin: 7px 0 5px; }
         .total-lbl { font-family: 'DejaVu Sans', sans-serif; font-size: 8px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #475569; }
         .total-val { font-family: 'DejaVu Sans', sans-serif; font-size: 13px; font-weight: bold; }
+        .total-val.minus { color: #B91C1C; }
         .badge { font-family: 'DejaVu Sans', sans-serif; font-size: 7.5px; font-weight: bold; padding: 2px 6px; border-radius: 8px; }
         .paid { background: #D1FAE5; color: #059669; }
         .unpaid { background: #FEF3C7; color: #B45309; }
@@ -37,6 +39,11 @@
         .qr { text-align: right; }
         .qr img { width: 62px; height: 62px; }
         .small { font-size: 7px; color: #64748B; }
+        .sect { font-family: 'DejaVu Sans', sans-serif; font-size: 7.5px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #475569; margin: 8px 0 3px; }
+        .items { font-size: 7.5px; }
+        .items th { font-family: 'DejaVu Sans', sans-serif; font-size: 7px; text-transform: uppercase; color: #64748B; text-align: left; border-bottom: 1px solid #E2E8F0; padding: 2px 0; font-weight: normal; }
+        .items td { padding: 2px 0; border-bottom: 1px dotted #E2E8F0; }
+        .items .num { text-align: right; }
     </style>
 </head>
 <body>
@@ -59,22 +66,41 @@
     <tr><td class="lbl">Nama</td><td class="val">{{ $payroll->employee?->name }}</td></tr>
     <tr><td class="lbl">NIK</td><td class="val">{{ $payroll->employee?->nik }}</td></tr>
     <tr><td class="lbl">Jabatan</td><td class="val">{{ $payroll->employee?->position }}</td></tr>
-    <tr><td class="lbl">Pekerjaan</td><td class="val">{{ $payroll->spk?->job_name }}</td></tr>
+</table>
+
+<div class="sect">Rincian SPK ({{ $items->count() }} pekerjaan)</div>
+
+<table class="items">
+    <tr>
+        <th style="width: 30%;">No. SPK</th>
+        <th class="num" style="width: 13%;">Nilai</th>
+        <th class="num" style="width: 11%;">Orang</th>
+        <th class="num" style="width: 12%;">Hari</th>
+        <th class="num" style="width: 18%;">Bagian</th>
+    </tr>
+    @forelse ($items as $item)
+        <tr>
+            <td>{{ Str::afterLast($item->spk_number, '/') }}</td>
+            <td class="num">{{ $fmt($item->spk_value) }}</td>
+            <td class="num">{{ $item->slot_count }}</td>
+            <td class="num">{{ $item->days_worked }}/{{ $item->duration_days }}</td>
+            <td class="num">{{ $fmt($item->share_amount) }}</td>
+        </tr>
+    @empty
+        <tr><td colspan="5" class="small">Tidak ada rincian SPK.</td></tr>
+    @endforelse
 </table>
 
 <div class="sep"></div>
 
 <table>
-    <tr><td class="lbl">Nilai SPK</td><td class="val">{{ $fmt($original) }}</td></tr>
-    <tr><td class="lbl">PPN 3%</td><td class="val">-{{ $fmt($ppn) }}</td></tr>
-    <tr><td class="lbl">Nilai bersih</td><td class="val">{{ $fmt($netSpk) }}</td></tr>
-</table>
-
-<div class="sep"></div>
-
-<table>
-    <tr><td class="lbl">Komisi {{ rtrim(rtrim(number_format($percentage, 2, ',', '.'), '0'), ',') }}%</td><td class="val">{{ $fmt($gross) }}</td></tr>
-    <tr><td class="lbl">Tunjangan makan</td><td class="val">{{ $fmt($payroll->meal_allowance) }}</td></tr>
+    <tr><td class="lbl">Bagian kotor</td><td class="val">{{ $fmt($payroll->gross_share) }}</td></tr>
+    <tr><td class="lbl">PPN {{ $pct($payroll->ppn_rate) }}%</td><td class="val">-{{ $fmt($payroll->ppn_amount) }}</td></tr>
+    <tr><td class="lbl">Komisi {{ $pct($payroll->commission_rate) }}%</td><td class="val">-{{ $fmt($payroll->commission_amount) }}</td></tr>
+    <tr>
+        <td class="lbl">Uang makan ({{ $payroll->meal_count }} &times; {{ $fmt($payroll->meal_rate) }})</td>
+        <td class="val">-{{ $fmt($payroll->meal_deduction) }}</td>
+    </tr>
     <tr><td class="lbl">Potongan kasbon</td><td class="val">-{{ $fmt($payroll->cash_advance_deduction) }}</td></tr>
 </table>
 
@@ -83,9 +109,15 @@
 <table>
     <tr>
         <td class="total-lbl">Gaji bersih</td>
-        <td class="val total-val">Rp {{ $fmt($payroll->net_salary) }}</td>
+        <td class="val total-val {{ $net < 0 ? 'minus' : '' }}">{{ $netLabel }}</td>
     </tr>
 </table>
+
+@if ($net < 0)
+    <div class="small" style="margin-top: 3px; color: #B91C1C;">
+        Hasil minus: potongan melebihi bagian karyawan pada periode ini.
+    </div>
+@endif
 
 <table style="margin-top: 6px;">
     <tr>

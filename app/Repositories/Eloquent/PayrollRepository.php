@@ -10,7 +10,7 @@ class PayrollRepository implements PayrollRepositoryInterface
 {
     public function getAll(?string $employeeId = null, ?string $period = null, ?string $paymentStatus = null)
     {
-        $query = Payroll::with(['employee', 'spk.shop'])->orderBy('created_at', 'desc');
+        $query = Payroll::with(['employee', 'spk.shop', 'items'])->orderBy('created_at', 'desc');
 
         if ($employeeId) {
             $query->where('employee_id', $employeeId);
@@ -29,12 +29,12 @@ class PayrollRepository implements PayrollRepositoryInterface
 
     public function getById(string $id)
     {
-        return Payroll::with(['employee', 'spk.shop'])->findOrFail($id);
+        return Payroll::with(['employee', 'spk.shop', 'items.spk'])->findOrFail($id);
     }
 
     public function getBySpkId(string $spkId)
     {
-        return Payroll::with(['employee', 'spk.shop'])->where('spk_id', $spkId)->first();
+        return Payroll::with(['employee', 'items'])->where('spk_id', $spkId)->first();
     }
 
     public function create(array $data)

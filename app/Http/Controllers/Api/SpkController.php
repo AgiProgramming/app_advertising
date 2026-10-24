@@ -35,7 +35,7 @@ class SpkController extends Controller
     {
         $spk = $this->spkService->createSpk($request->validated());
 
-        return new SpkResource($spk);
+        return (new SpkResource($spk))->response()->setStatusCode(201);
     }
 
     public function show(string $id)

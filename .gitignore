@@ -28,3 +28,6 @@ Thumbs.db
 
 # hasil build dokumentasi
 site/
+
+# dokumen SPK asli dari klien (jangan dipublikasikan)
+SPK/
