@@ -37,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Master Karyawan
         Route::apiResource('employees', EmployeeController::class);
         // SPK
+        Route::post('spks/parse-pdf', [SpkController::class, 'parsePdf']);
         Route::apiResource('spks', SpkController::class);
         // Kasbon Karyawan
         Route::apiResource('cash-advances', CashAdvanceController::class);
